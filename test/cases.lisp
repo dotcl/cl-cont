@@ -295,6 +295,14 @@
        (funcall cc 10)))
   4 5 14)
 
+(deftest function-5
+    (with-call/cc
+      ((lambda (a b)
+	 (declare (ignore b))
+	 (+ a 1))
+       5 10))
+  6)
+
 ;;; let*
 (deftest let*-1
     (with-call/cc
@@ -347,6 +355,13 @@
 	(list (+ a b) c)))
   (3 nil))
 
+(deftest let*-7
+    (with-call/cc
+      (let* ((a 1))
+	(declare (special a))
+	(+ a 2)))
+  3)
+
 ;;; let
 (deftest let-1
     (with-call/cc
@@ -387,6 +402,13 @@
 		    (funcall k 0)))))
        (funcall cc 10)))
   3 13)
+
+(deftest let-5
+    (with-call/cc
+      (let ((a 1))
+	(declare (special a))
+	(+ a 2)))
+  3)
 
 ;;; SETQ
 (deftest setq-1
@@ -491,6 +513,15 @@
 	(a 1 2)))
   3)
 
+(deftest flet-6
+    (with-call/cc
+      (flet ((a (i j)
+	       (declare (ignore i j))
+	       1))
+	(declare (ignore a))
+	1))
+  1)
+
 ;;; LABELS
 (deftest labels-1
     (with-call/cc
@@ -549,6 +580,15 @@
      1 2)
   3)
 
+(deftest labels-6
+    (with-call/cc
+      (labels ((a (i j)
+		 (declare (ignore i j))
+		 1))
+	(declare (ignore a))
+	1))
+  1)
+
 ;;; MACROLET
 (deftest macrolet-1
     (with-call/cc
@@ -577,4 +617,13 @@
 		  (funcall k 5)))))
        (funcall cc 6)))
   10 11)
+
+(deftest macrolet-4
+    (with-call/cc
+      (macrolet ((foo (a b)
+		   (declare (ignore b))
+		   `(+ ,a ,a)))
+	(declare (ignore foo))
+	5))
+  5)
 

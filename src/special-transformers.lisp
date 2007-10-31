@@ -28,6 +28,22 @@
   `(funcall ,k-expr ,cons))
 
 ;;; PROGN
+(defun extract-declarations (expr-list)
+  "Returns a list of declarations extracted from the EXPR-LIST."
+  (loop for i in expr-list
+       while (and (consp i)
+		  (eq (car i) 'declare))
+       collect i))
+
+(defun remove-declarations (expr-list)
+  "Removes declarations from the EXPR-LIST."
+  (let ((c 0))
+    (loop for i in expr-list
+       while (and (consp i)
+		  (eq (car i) 'declare))
+       do (incf c))
+    (nthcdr c expr-list)))
+
 (defun expr-sequence->cps (expr-list k-expr &key env)
   "Converts a list of expressions to be evaluated in order to CPS
   style."
@@ -113,7 +129,8 @@
       `(make-instance 'funcallable/cc
 		      :function
 		      (lambda (,k ,@arg-list)
-			,(expr-sequence->cps body k))))))
+			,@(extract-declarations body)
+			,(expr-sequence->cps (remove-declarations body) k))))))
 
 (defcpstransformer function (cons k-expr)
   (declare (special *ctx*))
@@ -136,8 +153,10 @@
     (if var
 	(expr->cps var-value
 		   `(lambda (,var-name)
+		      ,@(unless (cdr varlist)
+			   (extract-declarations let-body))
 		      ,(let*-varlist->cps (cdr varlist) let-body k-expr)))
-	(expr-sequence->cps let-body k-expr))))
+	(expr-sequence->cps (remove-declarations let-body) k-expr))))
 
 (defcpstransformer let* (cons k-expr)
   "Converts a LET* expression to CPS style."
@@ -158,7 +177,8 @@
   (let ((varlist (let-varlist->cons-pairs (cadr cons)))
 	(forms (cddr cons)))
     (expr->cps `((lambda ,(mapcar #'car varlist)
-		   ,@forms)
+		   ,@(extract-declarations forms)
+		   ,@(remove-declarations forms))
 		 ,@(mapcar #'cdr varlist))
 	       k-expr)))
 
@@ -207,7 +227,8 @@
 	    nil
 	    "Function arguments not specified")
     `(,fn-name (,k ,@fn-args)
-	       ,(expr-sequence->cps fn-forms k))))
+	       ,@(extract-declarations fn-forms)
+	       ,(expr-sequence->cps (remove-declarations fn-forms) k))))
 
 (defun declare-function-names-local (names)
   "Declares function names local in a transformation environment."
@@ -241,8 +262,9 @@
 	    nil
 	    "Too few parameters to FLET")
     `(flet ,(mapcar #'transform-local-function fn-list)
+       ,@(extract-declarations forms)
        ,(with-local-function-names (mapcar #'car fn-list)
-           (expr-sequence->cps forms k-expr)))))
+           (expr-sequence->cps (remove-declarations forms) k-expr)))))
 
 (defcpstransformer labels (cons k-expr)
   "Converts a LABELS expression to CPS style."
@@ -253,7 +275,8 @@
 	    "Too few parameters to LABELS")
     (with-local-function-names (mapcar #'car fn-list)
       `(labels ,(mapcar #'transform-local-function fn-list)
-	 ,(expr-sequence->cps forms k-expr)))))
+	 ,@(extract-declarations forms)
+	 ,(expr-sequence->cps (remove-declarations forms) k-expr)))))
 
 ;;; MACROLET
 (defmacro transform-macrolet-forms (forms k-expr transf-env &environment env)
@@ -267,5 +290,6 @@ it."
   "Converts a MACROLET expression to CPS style."
   (declare (special *ctx*))
   `(macrolet ,(cadr cons)
-     (transform-macrolet-forms ,(cddr cons) ,k-expr ,*ctx*)))
+     ,@(extract-declarations (cddr cons))
+     (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
 
