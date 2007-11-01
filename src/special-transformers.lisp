@@ -15,12 +15,25 @@
   `(call/cc (lambda (,k)
 	      ,@body)))
 
+(defun copy-hash-table (ht)
+  "Shallow hashtable copy."
+  (let ((nht (make-hash-table :size (hash-table-size ht))))
+    (maphash (lambda (key value)
+	       (setf (gethash key nht) value))
+	     ht)
+    nht))
+
 (defcpstransformer call/cc (cons k-expr)
   "Implements call/cc operator."
+  (declare (special *ctx*))
   (assert (= (length cons) 2)
 	  nil
 	  "Please ensure that CALL/CC has one argument")
-  `(funcall ,(cadr cons) ,k-expr))
+  (let ((r (gensym)))
+    `(funcall ,(cadr cons)
+	      (lambda (&optional ,r)
+		(let ((,(ctx-catch-table-symbol *ctx*) (copy-hash-table ,(ctx-catch-table-symbol *ctx*))))
+		  (funcall ,k-expr ,r))))))
 
 ;;; QUOTE
 (defcpstransformer quote (cons k-expr)
@@ -129,6 +142,7 @@
       `(make-instance 'funcallable/cc
 		      :function
 		      (lambda (,k ,@arg-list)
+			(declare (ignorable ,k))
 			,@(extract-declarations body)
 			,(expr-sequence->cps (remove-declarations body) k))))))
 
@@ -227,6 +241,7 @@
 	    nil
 	    "Function arguments not specified")
     `(,fn-name (,k ,@fn-args)
+	       (declare (ignorable ,k))
 	       ,@(extract-declarations fn-forms)
 	       ,(expr-sequence->cps (remove-declarations fn-forms) k))))
 
@@ -292,4 +307,56 @@ it."
   `(macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
      (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
+
+;;; SYMBOL-MACROLET
+(defcpstransformer symbol-macrolet (cons k-expr)
+  "Converts a SYMBOL-MACROLET expression to CPS style."
+  (declare (special *ctx*))
+  `(symbol-macrolet ,(cadr cons)
+     ,@(extract-declarations (cddr cons))
+     (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
+
+;;; LOCALLY
+(defcpstransformer locally (cons k-expr)
+  "Converts a LOCALLY expression to CPS style."
+  `(locally
+     ,@(extract-declarations (cdr cons))
+     ,(expr-sequence->cps (remove-declarations (cdr cons)) k-expr)))
+
+;;; CATCH/THROW
+(defcpstransformer catch (cons k-expr)
+  "Transforms a CATCH expression to CPS style."
+  (declare (special *ctx*))
+  (let ((k (gensym))
+	(body (or (copy-list (cddr cons)) (list nil)))
+	(last (car (last (cddr cons)))))
+    (rplaca (last body)
+	    `(prog1
+		 ,last
+	       (pop (gethash ,(cadr cons) ,(ctx-catch-table-symbol *ctx*)))))
+    `(let ((,k ,k-expr))
+       ,(expr-sequence->cps
+	 (append (list `(push ,k (gethash ,(cadr cons) ,(ctx-catch-table-symbol *ctx*))))
+		 body)
+	 k))))
+
+(defcpstransformer throw (cons k-expr)
+  "Transforms a THROW expression to CPS style."
+  (declare (ignore k-expr))
+  (declare (special *ctx*))
+  (assert (= (length cons) 3)
+	  nil
+	  "Incorrent number of arguments to THROW.")
+  (let ((res (gensym))
+	(present-p (gensym))
+	(tag (gensym)))
+    (expr->cps (cadr cons)
+	       `(lambda (,tag)
+		  ,(expr->cps (caddr cons)
+			      `(multiple-value-bind (,res ,present-p)
+				   (gethash ,tag ,(ctx-catch-table-symbol *ctx*))
+				 (if ,present-p
+				     (car ,res)
+				     (error "Attempt to THROW to a tag that doesn't exist: ~A"
+					    ,tag))))))))
 

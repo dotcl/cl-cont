@@ -7,6 +7,7 @@
   "A structure that represents a context used during call/cc
 transformation."
   (block-tags (make-hash-table))
+  (catch-table-symbol (gensym))
   (local-functions nil))
 
 (defmacro with-call/cc (&body body)
@@ -14,7 +15,8 @@ transformation."
 passing style."
   (let ((*ctx* (make-call/cc-context)))
     (declare (special *ctx*))
-    (expr-sequence->cps body '#'identity)))
+    `(let ((,(ctx-catch-table-symbol *ctx*) (make-hash-table)))
+       ,(expr-sequence->cps body '#'identity))))
 
 (defun expr->cps (expr k-expr &optional env)
   "Transforms expression to CPS style."

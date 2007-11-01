@@ -2,7 +2,7 @@
 Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 
 + 1. block
-  2. catch
++ 2. catch
   3. eval-when
 + 4. flet
 + 5. function
@@ -12,7 +12,7 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 + 9. let
 +10. let*
  11. load-time-value
- 12. locally
++12. locally
 +13. macrolet
  14. multiple-value-call
  15. multiple-value-prog1
@@ -21,9 +21,9 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 +18. quote
 +19. return-from
 +20. setq
- 21. symbol-macrolet
++21. symbol-macrolet
  22. tagbody
 +23. the
- 24. throw
++24. throw
  25. unwind-protect
 

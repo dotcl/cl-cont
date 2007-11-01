@@ -627,3 +627,147 @@
 	5))
   5)
 
+;;; SYMBOL-MACROLET
+(deftest symbol-macrolet-1
+    (with-call/cc
+      (symbol-macrolet ((a 1))
+	(declare (optimize safety))
+	a))
+  1)
+
+(deftest symbol-macrolet-2
+    (let (cc)
+      (values
+       (with-call/cc
+	 (symbol-macrolet ((a 1))
+	   (+ a (let/cc k
+		  (setf cc k)
+		  (funcall k 0)))))
+       (funcall cc 5)))
+  1 6)
+
+;;; LOCALLY
+(deftest locally-1
+    (let (cc)
+      (values
+       (with-call/cc
+	 (locally
+	     (declare (optimize safety))
+	   (+ 1 (let/cc k
+		  (setf cc k)
+		  (funcall k 2)))))
+       (funcall cc 5)))
+  3 6)
+
+;;; CATCH/THROW
+(deftest catch/throw-1
+    (with-call/cc (catch 'foo
+		    1 2 3))
+  3)
+
+(deftest catch/throw-2
+    (let (cc)
+      (values
+       (with-call/cc (catch 'foo
+		       1 (let/cc k
+			   (setf cc k)
+			   (funcall k 2)) 3))
+       (funcall cc 10)))
+  3 3)
+
+(deftest catch/throw-3
+    (let (cc)
+      (values
+       (with-call/cc (catch 'foo
+		       1 (let/cc k
+			   (setf cc k)
+			   (funcall k 2))))
+       (funcall cc 10)))
+  2 10)
+
+(deftest catch/throw-4
+    (with-call/cc (catch 'foo
+		    1 (throw 'foo 2) 3))
+  2)
+
+(deftest catch/throw-5
+    (multiple-value-bind (res err)
+	(ignore-errors
+	  (with-call/cc (catch 'foo
+			  1 (throw 'bar 2) 3)))
+      (format nil "~A" err))
+  "Attempt to THROW to a tag that doesn't exist: BAR")
+
+(deftest catch/throw-6
+    (let (cc)
+      (values
+       (with-call/cc (catch 'foo
+		       1 (throw 'foo (let/cc k
+				       (setf cc k)
+				       (funcall k 2))) 3))
+       (funcall cc 5)))
+  2 5)
+
+(deftest catch/throw-7
+    (with-call/cc (catch 'foo
+		    1
+		    (catch 'bar
+		      2 (throw 'bar 3) 4)
+		    5))
+  5)
+
+(deftest catch/throw-8
+    (with-call/cc (catch 'foo
+		    1
+		    (catch 'bar
+		      2 (throw 'foo 3) 4)
+		    5))
+  3)
+
+(deftest catch/throw-9
+    (with-call/cc (catch 'foo
+		    1
+		    (catch 'bar
+		      2 (throw 'bar 3))))
+  3)
+
+(deftest catch/throw-10
+    (with-call/cc (catch 'foo
+		    1
+		    (catch 'foo
+		      2 (throw 'foo 3) 4)
+		    5))
+  5)
+
+(deftest catch/throw-11
+    (with-call/cc (catch 'foo))
+  nil)
+
+(deftest catch/throw-12
+    (let (cc)
+      (values
+       (with-call/cc (catch (let/cc k
+			      (setf cc k)
+			      (funcall k 'foo))
+		       (throw 'foo 1)))
+       (multiple-value-bind (res err)
+	   (ignore-errors (funcall cc 'bar))
+	 (format nil "~A" err))))
+  1 "Attempt to THROW to a tag that doesn't exist: FOO")
+
+(deftest catch/throw-13
+    (let (cc)
+      (values
+       (with-call/cc (catch 'foo
+		       1
+		       (catch 'bar
+			 2
+			 (throw (let/cc k
+				  (setf cc k)
+				  (funcall k 'foo)) 10)
+			 3)
+		       4))
+       (funcall cc 'foo)
+       (funcall cc 'bar)))
+  10 10 4)
+
