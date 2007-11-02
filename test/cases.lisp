@@ -851,3 +851,15 @@
 			 3))
   3)
 
+;;; EVAL-WHEN
+(deftest eval-when-1
+    (let (cc)
+      (values
+       (with-call/cc
+	 (eval-when (:execute)
+	   (+ 1 (let/cc k
+		  (setf cc k)
+		  (funcall k 2)))))
+       (funcall cc 3)))
+  3 4)
+

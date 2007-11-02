@@ -427,6 +427,12 @@ it."
 
 ;;; LOAD-TIME-VALUE
 (defcpstransformer load-time-value (cons k-expr)
-  "Transforms LOAD-TIME-VALUE to CPS style."
+  "Transforms LOAD-TIME-VALUE expression to CPS style."
   `(funcall ,k-expr ,cons))
+
+;;; EVAL-WHEN
+(defcpstransformer eval-when (cons k-expr)
+  "Transforms EVAL-WHEN expression to CPS style."
+  `(eval-when ,(cadr cons)
+     ,(expr-sequence->cps (cddr cons) k-expr)))
 
