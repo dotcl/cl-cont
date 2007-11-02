@@ -33,6 +33,7 @@
     `(funcall ,(cadr cons)
 	      (lambda (&optional ,r)
 		(let ((,(ctx-catch-table-symbol *ctx*) (copy-hash-table ,(ctx-catch-table-symbol *ctx*))))
+		  (declare (ignorable ,(ctx-catch-table-symbol *ctx*)))
 		  (funcall ,k-expr ,r))))))
 
 ;;; QUOTE

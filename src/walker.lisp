@@ -16,6 +16,7 @@ passing style."
   (let ((*ctx* (make-call/cc-context)))
     (declare (special *ctx*))
     `(let ((,(ctx-catch-table-symbol *ctx*) (make-hash-table)))
+       (declare (ignorable ,(ctx-catch-table-symbol *ctx*)))
        ,(expr-sequence->cps body '#'identity))))
 
 (defun expr->cps (expr k-expr &optional env)
