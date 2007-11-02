@@ -17,7 +17,7 @@ passing style."
     (declare (special *ctx*))
     `(let ((,(ctx-catch-table-symbol *ctx*) (make-hash-table)))
        (declare (ignorable ,(ctx-catch-table-symbol *ctx*)))
-       ,(expr-sequence->cps body '#'identity))))
+       ,(expr-sequence->cps body '#'values))))
 
 (defun expr->cps (expr k-expr &optional env)
   "Transforms expression to CPS style."
@@ -46,8 +46,10 @@ passing style."
   "Transforms a function call to CPS style."
   (if cons
       (expr->cps (car cons)
-		 (let ((i (gensym)))
-		   `(lambda (,i)
+		 (let ((i (gensym))
+		       (rest-args (gensym)))
+		   `(lambda (,i &rest ,rest-args)
+		      (declare (ignore ,rest-args))
 		      ,(funcall->cps (cdr cons)
 				     k-expr
 				     (cons i args)))))

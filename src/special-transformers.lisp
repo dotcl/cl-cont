@@ -29,9 +29,11 @@
   (assert (= (length cons) 2)
 	  nil
 	  "Please ensure that CALL/CC has one argument")
-  (let ((r (gensym)))
+  (let ((r (gensym))
+	(rest-args (gensym)))
     `(funcall ,(cadr cons)
-	      (lambda (&optional ,r)
+	      (lambda (&optional ,r &rest ,rest-args)
+		(declare (ignore ,rest-args))
 		(let ((,(ctx-catch-table-symbol *ctx*) (copy-hash-table ,(ctx-catch-table-symbol *ctx*))))
 		  (declare (ignorable ,(ctx-catch-table-symbol *ctx*)))
 		  (funcall ,k-expr ,r))))))
@@ -64,9 +66,10 @@
   (expr->cps (car expr-list)
 	     (if (null (cdr expr-list))
 		 k-expr
-		 (let ((r (gensym)))
-		   `(lambda (&optional ,r)
-		      (declare (ignore ,r))
+		 (let ((r (gensym))
+		       (rest-args (gensym)))
+		   `(lambda (&optional ,r &rest ,rest-args)
+		      (declare (ignore ,r ,rest-args))
 		      ,(expr-sequence->cps (cdr expr-list) k-expr :env env))))
 	     env))
 
@@ -105,8 +108,10 @@
 	(pred-true-expr (caddr cons))
 	(pred-false-expr (cadddr cons)))
     (expr->cps pred-expr
-	       (let ((pred (gensym)))
-		 `(lambda (,pred)
+	       (let ((pred (gensym))
+		     (rest-args (gensym)))
+		 `(lambda (,pred &rest ,rest-args)
+		    (declare (ignore ,rest-args))
 		    (if ,pred
 			,(expr->cps pred-true-expr k-expr)
 			,(expr->cps pred-false-expr k-expr)))))))
@@ -126,9 +131,15 @@
   (c2mop:set-funcallable-instance-function
    instance
    (lambda (&rest args)
-     (apply (f/cc-function instance) #'identity args))))
+     (apply (f/cc-function instance) #'values args))))
 
 (defun funcall/cc (fdesignator k &rest args)
+  "Implements FUNCALL for a CPS converter."
+  (typecase fdesignator
+    (funcallable/cc (apply (f/cc-function fdesignator) k args))
+    (t (funcall k (apply fdesignator args)))))
+
+(defun apply/cc (fdesignator k args)
   "Implements FUNCALL for a CPS converter."
   (typecase fdesignator
     (funcallable/cc (apply (f/cc-function fdesignator) k args))
@@ -360,4 +371,31 @@ it."
 				     (car ,res)
 				     (error "Attempt to THROW to a tag that doesn't exist: ~A"
 					    ,tag))))))))
+
+;;; VALUES
+(defcpstransformer values (cons k-expr)
+  "Transforms a VALUES expression to CPS style."
+  `(funcall ,k-expr ,@(cdr cons)))
+
+;;; VALUES-LIST
+(defcpstransformer values-list (cons k-expr)
+  "Transforms a VALUES-LIST expression to CPS style."
+  `(apply ,k-expr ,(cadr cons)))
+
+;;; MULTIPLE-VALUE-CALL
+(defun accum-mc-sequence->cps (expr-list fn k-expr args)
+  "Converts a list of expressions to be evaluated in order to CPS
+  style and collects their results (including multiple values)."
+  (if (null expr-list)
+      `(apply/cc ,fn ,k-expr (append ,@(reverse args)))
+      (expr->cps (car expr-list)
+		 (let ((rs (gensym)))
+		   `(lambda (&rest ,rs)
+		      ,(accum-mc-sequence->cps (cdr expr-list) fn k-expr (cons rs args)))))))
+
+(defcpstransformer multiple-value-call (cons k-expr)
+  "Transforms a MULTIPLE-VALUE-CALL expression to CPS style."
+  (let ((fn (cadr cons))
+	(forms (cddr cons)))
+    (accum-mc-sequence->cps forms fn k-expr nil)))
 

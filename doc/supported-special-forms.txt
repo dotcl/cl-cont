@@ -14,7 +14,7 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
  11. load-time-value
 +12. locally
 +13. macrolet
- 14. multiple-value-call
++14. multiple-value-call
  15. multiple-value-prog1
 +16. progn
  17. progv

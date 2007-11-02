@@ -771,3 +771,21 @@
        (funcall cc 'bar)))
   10 10 4)
 
+;;; VALUES
+(deftest values-1
+    (with-call/cc (values 1 2))
+  1 2)
+
+;;; VALUES-LIST
+(deftest values-list-1
+    (with-call/cc (values-list (list 1 2)))
+  1 2)
+
+;;; MULTIPLE-VALUE-CALL
+(deftest multiple-value-call-1
+    (with-call/cc
+      (multiple-value-call (lambda (&rest args)
+			     args)
+	1 2 (values 3 4) 5 (values-list (list 'a 'b))))
+  (1 2 3 4 5 a b))
+
