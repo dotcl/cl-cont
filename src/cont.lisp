@@ -30,3 +30,11 @@
   (multiple-value-bind (expansion expanded-p)
       (macroexpand form env)
     `(values ',expansion ',expanded-p)))
+
+(defstruct (call/cc-context (:conc-name ctx-))
+  "A structure that represents a context used during call/cc
+transformation."
+  (block-tags (make-hash-table))
+  (catch-table-symbol (gensym))
+  (local-functions nil))
+

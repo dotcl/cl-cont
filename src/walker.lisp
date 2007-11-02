@@ -3,13 +3,6 @@
 
 (export '(with-call/cc expr->cps))
 
-(defstruct (call/cc-context (:conc-name ctx-))
-  "A structure that represents a context used during call/cc
-transformation."
-  (block-tags (make-hash-table))
-  (catch-table-symbol (gensym))
-  (local-functions nil))
-
 (defmacro with-call/cc (&body body)
   "Gives access to CALL/CC by transforming BODY to continuation
 passing style."

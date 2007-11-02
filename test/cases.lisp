@@ -695,8 +695,8 @@
 	(ignore-errors
 	  (with-call/cc (catch 'foo
 			  1 (throw 'bar 2) 3)))
-      (format nil "~A" err))
-  "Attempt to THROW to a tag that doesn't exist: BAR")
+      (not (null err)))
+  t)
 
 (deftest catch/throw-6
     (let (cc)
@@ -752,8 +752,8 @@
 		       (throw 'foo 1)))
        (multiple-value-bind (res err)
 	   (ignore-errors (funcall cc 'bar))
-	 (format nil "~A" err))))
-  1 "Attempt to THROW to a tag that doesn't exist: FOO")
+	 (not (null err)))))
+  1 t)
 
 (deftest catch/throw-13
     (let (cc)

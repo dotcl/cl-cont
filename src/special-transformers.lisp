@@ -125,13 +125,17 @@
   (:metaclass c2mop:funcallable-standard-class)
   (:documentation "A structure that represents a funcallable object"))
 
-(defmethod initialize-instance ((instance funcallable/cc) &rest initargs)
-  (declare (ignorable initargs))
-  (call-next-method)
-  (c2mop:set-funcallable-instance-function
-   instance
-   (lambda (&rest args)
-     (apply (f/cc-function instance) #'values args))))
+(defun make-funcallable (function)
+  "Creates an instance of FUNCALLABLE/CC."
+  (let ((inst (make-instance 'funcallable/cc :function function)))
+    (c2mop:set-funcallable-instance-function
+     inst
+     #-cmu (lambda (&rest args)
+	     (apply (f/cc-function inst) #'values args))
+     #+cmu (compile nil
+		    `(lambda (&rest args)
+		       (apply (f/cc-function ,inst) #'values args))))
+    inst))
 
 (defun funcall/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
@@ -151,20 +155,17 @@
   (let ((arg-list (cadr cons))
 	(body (cddr cons)))
     (let ((k (gensym)))
-      `(make-instance 'funcallable/cc
-		      :function
-		      (lambda (,k ,@arg-list)
-			(declare (ignorable ,k))
-			,@(extract-declarations body)
-			,(expr-sequence->cps (remove-declarations body) k))))))
+      `(make-funcallable (lambda (,k ,@arg-list)
+			   (declare (ignorable ,k))
+			   ,@(extract-declarations body)
+			   ,(expr-sequence->cps (remove-declarations body) k))))))
 
 (defcpstransformer function (cons k-expr)
   (declare (special *ctx*))
   (let ((fdesignator (cadr cons)))
     (etypecase fdesignator
       (symbol (if (find fdesignator (ctx-local-functions *ctx*))
-		  `(funcall ,k-expr (make-instance 'funcallable/cc
-						   :function ,cons))
+		  `(funcall ,k-expr (make-funcallable ,cons))
 		  `(funcall ,k-expr ,cons)))
       (list (ecase (car fdesignator)
 	      (setf `(funcall ,k-expr ,cons))
