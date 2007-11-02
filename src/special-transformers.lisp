@@ -375,19 +375,32 @@ it."
 ;;; VALUES
 (defcpstransformer values (cons k-expr)
   "Transforms a VALUES expression to CPS style."
-  `(funcall ,k-expr ,@(cdr cons)))
+  (expr->cps `(list ,@(cdr cons))
+	     (let ((args (gensym))
+		   (rest (gensym)))
+	       `(lambda (,args &rest ,rest)
+		  (declare (ignore ,rest))
+		  (apply ,k-expr ,args)))))
 
 ;;; VALUES-LIST
 (defcpstransformer values-list (cons k-expr)
   "Transforms a VALUES-LIST expression to CPS style."
-  `(apply ,k-expr ,(cadr cons)))
+  (expr->cps (cadr cons)
+	     (let ((args (gensym))
+		   (rest (gensym)))
+	       `(lambda (,args &rest ,rest)
+		  (declare (ignore ,rest))
+		  (apply ,k-expr ,args)))))
 
 ;;; MULTIPLE-VALUE-CALL
 (defun accum-mc-sequence->cps (expr-list fn k-expr args)
   "Converts a list of expressions to be evaluated in order to CPS
   style and collects their results (including multiple values)."
   (if (null expr-list)
-      `(apply/cc ,fn ,k-expr (append ,@(reverse args)))
+      (expr->cps fn
+		 (let ((r (gensym)))
+		   `(lambda (,r)
+		      (apply/cc ,r ,k-expr (append ,@(reverse args))))))
       (expr->cps (car expr-list)
 		 (let ((rs (gensym)))
 		   `(lambda (&rest ,rs)
@@ -399,3 +412,15 @@ it."
 	(forms (cddr cons)))
     (accum-mc-sequence->cps forms fn k-expr nil)))
 
+;;; MULTIPLE-VALUE-PROG1
+(defcpstransformer multiple-value-prog1 (cons k-expr)
+  "Transforms MULTIPLE-VALUE-PROG1 expression to CPS style."
+  (let ((args (gensym))
+	(res (gensym)))
+    (expr->cps `(let (,args)
+		  (multiple-value-call (lambda (&rest ,res)
+					 (setf ,args ,res))
+		    ,(cadr cons))
+		  ,@(cddr cons)
+		  (values-list ,args))
+	       k-expr)))

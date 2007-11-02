@@ -776,10 +776,36 @@
     (with-call/cc (values 1 2))
   1 2)
 
+(deftest values-2
+    (with-call/cc (values 1 (let/cc k
+			      (funcall k 2))))
+  1 2)
+
+(deftest values-3
+    (let (cc)
+      (with-call/cc (values 1 (let/cc k
+				(setf cc k)
+				(funcall k 2))))
+      (funcall cc 10))
+  1 10)
+
 ;;; VALUES-LIST
 (deftest values-list-1
     (with-call/cc (values-list (list 1 2)))
   1 2)
+
+(deftest values-list-2
+    (with-call/cc (values-list (list 1 (let/cc k
+					 (funcall k 2)))))
+  1 2)
+
+(deftest values-list-3
+    (let (cc)
+      (with-call/cc (values-list (list 1 (let/cc k
+					   (setf cc k)
+					   (funcall k 2)))))
+      (funcall cc 10))
+  1 10)
 
 ;;; MULTIPLE-VALUE-CALL
 (deftest multiple-value-call-1
@@ -788,4 +814,33 @@
 			     args)
 	1 2 (values 3 4) 5 (values-list (list 'a 'b))))
   (1 2 3 4 5 a b))
+
+(deftest multiple-value-call-2
+    (with-call/cc
+      (multiple-value-call (let/cc k
+			     (funcall k (lambda (&rest args)
+					  args)))
+	1 2 (values 3 4) 5 (values-list (list 'a 'b))))
+  (1 2 3 4 5 a b))
+
+(deftest multiple-value-call-3
+    (with-call/cc
+      (multiple-value-call (lambda (&rest args)
+			     args)
+	1 2 (values 3 (let/cc k
+			(funcall k 4))) 5 (values-list (list 'a 'b))))
+  (1 2 3 4 5 a b))
+
+;;; MULTIPLE-VALUE-PROG1
+(deftest multiple-value-prog1-1
+    (with-call/cc (multiple-value-prog1 (values 1 2 3)
+		    4 5))
+  1 2 3)
+
+(deftest multiple-value-prog1-2
+    (with-call/cc (multiple-value-prog1 (values 1 (let/cc k
+						    (funcall k 2)) 3)
+		    (let/cc k
+		      (funcall k 4)) 5))
+  1 2 3)
 
