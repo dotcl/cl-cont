@@ -424,3 +424,9 @@ it."
 		  ,@(cddr cons)
 		  (values-list ,args))
 	       k-expr)))
+
+;;; LOAD-TIME-VALUE
+(defcpstransformer load-time-value (cons k-expr)
+  "Transforms LOAD-TIME-VALUE to CPS style."
+  `(funcall ,k-expr ,cons))
+

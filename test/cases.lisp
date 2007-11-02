@@ -844,3 +844,10 @@
 		      (funcall k 4)) 5))
   1 2 3)
 
+;;; LOAD-TIME-VALUE
+(deftest load-time-value-1
+    (with-call/cc (progn 1
+			 (load-time-value 2)
+			 3))
+  3)
+

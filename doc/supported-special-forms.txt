@@ -11,7 +11,7 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 + 8. labels
 + 9. let
 +10. let*
- 11. load-time-value
++11. load-time-value
 +12. locally
 +13. macrolet
 +14. multiple-value-call
