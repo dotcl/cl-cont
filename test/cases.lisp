@@ -863,3 +863,9 @@
        (funcall cc 3)))
   3 4)
 
+;;; PROGV
+(deftest progv-1
+    (with-call/cc
+      (progv (list 'a 'b) (list 1 2)
+	1))
+  1)
