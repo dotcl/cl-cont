@@ -1,6 +1,10 @@
 
 Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 
++ fully supported
+- supported without call/cc allowed
+[blank] not yet implemented
+
 + 1. block
 - 2. catch
 + 3. eval-when
