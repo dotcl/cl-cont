@@ -276,11 +276,13 @@
   3)
 
 (deftest function-3
-    (let ((list (list 1 2 3))
-	  (f (with-call/cc
-	       #'(setf car))))
-      (funcall f 2 list)
-      list)
+    (flet (((setf car-test) (value place)
+	     (setf (car place) value)))
+      (let ((list (list 1 2 3))
+	    (f (with-call/cc
+		 #'(setf car-test))))
+	(funcall f 2 list)
+	list))
   (2 2 3))
 
 (deftest function-4
