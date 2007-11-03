@@ -179,10 +179,12 @@
 	 (var-value (when (consp var) (cadr var))))
     (if var
 	(expr->cps var-value
-		   `(lambda (,var-name)
-		      ,@(unless (cdr varlist)
-			   (extract-declarations let-body))
-		      ,(let*-varlist->cps (cdr varlist) let-body k-expr)))
+		   (let ((rest-args (gensym)))
+		     `(lambda (,var-name &rest ,rest-args)
+			(declare (ignore ,rest-args))
+			,@(unless (cdr varlist)
+				  (extract-declarations let-body))
+			,(let*-varlist->cps (cdr varlist) let-body k-expr))))
 	(expr-sequence->cps (remove-declarations let-body) k-expr))))
 
 (defcpstransformer let* (cons k-expr)
@@ -214,11 +216,13 @@
   "Converts a list of SETQ pairs to CPS style."
   (when setq-pairs
     (expr->cps (cdar setq-pairs)
-	       (let ((i (gensym)))
+	       (let ((i (gensym))
+		     (rest-args (gensym)))
 		 (assert (symbolp (caar setq-pairs))
 			 nil
 			 "The value ~A is not a symbol" (caar setq-pairs))
-		 `(lambda (,i)
+		 `(lambda (,i &rest ,rest-args)
+		    (declare (ignore ,rest-args))
 		    ,@(if (cdr setq-pairs)
 			  `((setq ,(caar setq-pairs) ,i)
 			    ,(setq->cps (cdr setq-pairs) k-expr))
