@@ -111,7 +111,11 @@
 			,(expr->cps pred-false-expr k-expr)))))))
 
 ;;; FUNCTION
-(defclass funcallable/cc ()
+#+allegro (eval-when (:compile-toplevel :load-toplevel :execute)
+	    (unless (c2mop:class-finalized-p (find-class 'c2mop:funcallable-standard-object))
+	      (c2mop:finalize-inheritance (find-class 'c2mop:funcallable-standard-object))))
+
+(defclass funcallable/cc (c2mop:funcallable-standard-object)
   ((function :accessor f/cc-function
 	     :initarg :function
 	     :documentation "A function object that accepts a
