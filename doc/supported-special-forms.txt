@@ -2,7 +2,7 @@
 Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 
 + 1. block
-+ 2. catch
+- 2. catch
 + 3. eval-when
 + 4. flet
 + 5. function
@@ -24,6 +24,6 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 +21. symbol-macrolet
  22. tagbody
 +23. the
-+24. throw
+-24. throw
  25. unwind-protect
 

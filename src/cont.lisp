@@ -35,6 +35,5 @@
   "A structure that represents a context used during call/cc
 transformation."
   (block-tags (make-hash-table))
-  (catch-table-symbol (gensym))
   (local-functions nil))
 

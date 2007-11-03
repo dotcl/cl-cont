@@ -8,9 +8,7 @@
 passing style."
   (let ((*ctx* (make-call/cc-context)))
     (declare (special *ctx*))
-    `(let ((,(ctx-catch-table-symbol *ctx*) (make-hash-table)))
-       (declare (ignorable ,(ctx-catch-table-symbol *ctx*)))
-       ,(expr-sequence->cps body '#'values))))
+    (expr-sequence->cps body '#'values)))
 
 (defun expr->cps (expr k-expr &optional env)
   "Transforms expression to CPS style."

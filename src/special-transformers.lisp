@@ -29,14 +29,8 @@
   (assert (= (length cons) 2)
 	  nil
 	  "Please ensure that CALL/CC has one argument")
-  (let ((r (gensym))
-	(rest-args (gensym)))
-    `(funcall ,(cadr cons)
-	      (lambda (&optional ,r &rest ,rest-args)
-		(declare (ignore ,rest-args))
-		(let ((,(ctx-catch-table-symbol *ctx*) (copy-hash-table ,(ctx-catch-table-symbol *ctx*))))
-		  (declare (ignorable ,(ctx-catch-table-symbol *ctx*)))
-		  (funcall ,k-expr ,r))))))
+  `(funcall ,(cadr cons)
+	    ,k-expr))
 
 ;;; QUOTE
 (defcpstransformer quote (cons k-expr)
@@ -343,39 +337,7 @@ it."
 ;;; CATCH/THROW
 (defcpstransformer catch (cons k-expr)
   "Transforms a CATCH expression to CPS style."
-  (declare (special *ctx*))
-  (let ((k (gensym))
-	(body (or (copy-list (cddr cons)) (list nil)))
-	(last (car (last (cddr cons)))))
-    (rplaca (last body)
-	    `(prog1
-		 ,last
-	       (pop (gethash ,(cadr cons) ,(ctx-catch-table-symbol *ctx*)))))
-    `(let ((,k ,k-expr))
-       ,(expr-sequence->cps
-	 (append (list `(push ,k (gethash ,(cadr cons) ,(ctx-catch-table-symbol *ctx*))))
-		 body)
-	 k))))
-
-(defcpstransformer throw (cons k-expr)
-  "Transforms a THROW expression to CPS style."
-  (declare (ignore k-expr))
-  (declare (special *ctx*))
-  (assert (= (length cons) 3)
-	  nil
-	  "Incorrent number of arguments to THROW.")
-  (let ((res (gensym))
-	(present-p (gensym))
-	(tag (gensym)))
-    (expr->cps (cadr cons)
-	       `(lambda (,tag)
-		  ,(expr->cps (caddr cons)
-			      `(multiple-value-bind (,res ,present-p)
-				   (gethash ,tag ,(ctx-catch-table-symbol *ctx*))
-				 (if ,present-p
-				     (car ,res)
-				     (error "Attempt to THROW to a tag that doesn't exist: ~A"
-					    ,tag))))))))
+  `(funcall ,k-expr ,cons))
 
 ;;; VALUES
 (defcpstransformer values (cons k-expr)
