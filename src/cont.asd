@@ -16,6 +16,8 @@
   :components ((:file "cont")
 	       (:file "special-transformers"
 		      :depends-on ("cont"))
+	       (:file "helper-transformers"
+		      :depends-on ("special-transformers"))
 	       (:file "walker"
 		      :depends-on ("cont" "special-transformers"))))
 

@@ -1,10 +1,9 @@
 
-Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
-
 + fully supported
 - supported without call/cc allowed
 [blank] not yet implemented
 
+Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 + 1. block
 - 2. catch
 + 3. eval-when
@@ -30,4 +29,7 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 +23. the
 -24. throw
 -25. unwind-protect
+
+Additional constructs
++ 1. defun (shortcut: defun/cc)
 

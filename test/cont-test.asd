@@ -14,6 +14,8 @@
   :depends-on ("cont" "rt")
   :components ((:file "cont-test")
 	       (:file "cases"
+		      :depends-on ("cont-test"))
+	       (:file "helper-cases"
 		      :depends-on ("cont-test"))))
 
 
