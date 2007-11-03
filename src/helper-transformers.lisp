@@ -24,3 +24,12 @@
      (defun ,name ,arglist
        ,@body)))
 
+;;; FUNCALL/APPLY
+(defcpstransformer funcall (cons k-expr)
+  "Converts FUNCALL to FUNCALL/CC."
+  (funcall->cps (cdr cons) k-expr nil))
+
+(defcpstransformer apply (cons k-expr)
+  "Converts APPLY to APPLY/CC."
+  (apply->cps (cdr cons) k-expr nil))
+

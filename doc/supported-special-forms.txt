@@ -32,4 +32,6 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 
 Additional constructs
 + 1. defun (shortcut: defun/cc)
++ 2. funcall
++ 3. apply
 

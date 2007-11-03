@@ -33,8 +33,8 @@ passing style."
 				  (cdr cons))
 			    k-expr nil))))))
 
-(defun funcall->cps (cons k-expr args)
-  "Transforms a function call to CPS style."
+(defun application->cps (app-sym cons k-expr args)
+  "Transforms a function application to CPS style."
   (if cons
       (expr->cps (car cons)
 		 (let ((i (gensym))
@@ -42,9 +42,17 @@ passing style."
 		   `(lambda (,i &rest ,rest-args)
 		      (declare (ignorable ,i))
 		      (declare (ignore ,rest-args))
-		      ,(funcall->cps (cdr cons)
-				     k-expr
-				     (cons i args)))))
+		      ,(application->cps app-sym (cdr cons)
+					 k-expr
+					 (cons i args)))))
       (let ((r-args (reverse args)))
-	`(funcall/cc ,(car r-args) ,k-expr ,@(cdr r-args)))))
+	`(,app-sym ,(car r-args) ,k-expr ,@(cdr r-args)))))
+
+(defun funcall->cps (cons k-expr args)
+  "Transforms FUNCALL to CPS style."
+  (application->cps 'funcall/cc cons k-expr args))
+
+(defun apply->cps (cons k-expr args)
+  "Transforms APPLY to CPS style."
+  (application->cps 'apply/cc cons k-expr args))
 
