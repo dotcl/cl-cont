@@ -29,5 +29,5 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
  22. tagbody
 +23. the
 -24. throw
- 25. unwind-protect
+-25. unwind-protect
 

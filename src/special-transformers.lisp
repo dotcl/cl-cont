@@ -412,3 +412,8 @@ it."
   "Basic support for now."
   `(funcall ,k-expr ,cons))
 
+;;; UNWIND-PROTECT
+(defcpstransformer unwind-protect (cons k-expr)
+  "Basic support for UNWIND-PROTECT."
+  `(funcall ,k-expr ,cons))
+

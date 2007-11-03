@@ -771,3 +771,11 @@
 	1))
   1)
 
+;;; UNWIND-PROTECT
+(deftest unwind-protect-1
+    (with-call/cc
+      (unwind-protect
+	   1
+	2 3 4))
+  1)
+
