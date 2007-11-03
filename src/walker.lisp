@@ -42,6 +42,7 @@ passing style."
 		 (let ((i (gensym))
 		       (rest-args (gensym)))
 		   `(lambda (,i &rest ,rest-args)
+		      (declare (ignorable ,i))
 		      (declare (ignore ,rest-args))
 		      ,(funcall->cps (cdr cons)
 				     k-expr
