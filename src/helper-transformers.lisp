@@ -6,7 +6,6 @@
 ;;; DEFUN
 (defcpstransformer defun (cons k-expr)
   "Transforms DEFUN expression to CPS form."
-  (declare (ignore k-expr))
   (let ((name (cadr cons))
 	(args (caddr cons))
 	(body (cdddr cons)))
@@ -16,7 +15,7 @@
 				   (block ,name
 				     ,@body))
 				nil))
-       ',name)))
+       (funcall ,k-expr ',name))))
 
 (defmacro defun/cc (name arglist &body body)
   "A helper macro to define a function that supports CALL/CC."
