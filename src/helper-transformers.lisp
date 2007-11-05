@@ -12,8 +12,9 @@
     `(progn
        (setf (fdefinition ',name)
 	     ,(lambda-expr->cps `(lambda ,args
+				   ,@(extract-declarations body)
 				   (block ,name
-				     ,@body))
+				     ,@(remove-declarations body)))
 				nil))
        (funcall ,k-expr ',name))))
 

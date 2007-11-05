@@ -26,6 +26,14 @@
      (funcall *test-fn/cc* 10))
   3 11)
 
+(defun/cc test-fn/cc-3 (a)
+  (declare (ignore a))
+  1)
+
+(deftest defun/cc-4
+    (test-fn/cc-3 10)
+  1)
+
 ;;; explicit FUNCALL
 (deftest explicit-funcall-1
     (let (cc)
