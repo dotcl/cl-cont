@@ -1,7 +1,7 @@
 
 (in-package :cont)
 
-(export '(expr-sequence->cps call/cc let/cc))
+(export '(expr-sequence->cps call/cc let/cc lambda/cc))
 
 ;;; CALL/CC and friends
 (defun call/cc (cc)
@@ -168,6 +168,12 @@
       (list (ecase (car fdesignator)
 	      (setf `(funcall ,k-expr ,cons))
 	      (lambda `(funcall ,k-expr ,(lambda-expr->cps fdesignator k-expr))))))))
+
+(defmacro lambda/cc (args-list &body body)
+  "A helper macro that wraps LAMBDA definitions with WITH-CALL/CC."
+  `(with-call/cc
+     (lambda ,args-list
+       ,@body)))
 
 ;;; LET*
 (defun let*-varlist->cps (varlist let-body k-expr)

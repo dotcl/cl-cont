@@ -3,6 +3,11 @@
 
 (export '(defun/cc))
 
+;;; Nested WITH-CALL/CC
+(defcpstransformer with-call/cc (cons k-expr)
+  "Transforms a nested WITH-CALL/CC."
+  (expr-sequence->cps (cdr cons) k-expr))
+
 ;;; DEFUN
 (defcpstransformer defun (cons k-expr)
   "Transforms DEFUN expression to CPS form."

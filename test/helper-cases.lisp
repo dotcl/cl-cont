@@ -1,6 +1,17 @@
 
 (in-package :cont-test)
 
+;; nested with-call/cc
+(deftest with-call/cc-1
+    (let (cc)
+      (values
+       (with-call/cc
+	 (+ 1 (with-call/cc (let/cc k
+			      (setf cc k)
+			      (funcall k 2)))))
+       (funcall cc 4)))
+  3 5)
+
 ;;; DEFUN
 (defun/cc test-fn/cc-1 (a b)
   (+ a b))

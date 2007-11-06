@@ -305,6 +305,17 @@
        5 10))
   6)
 
+(deftest function-6
+    (let (cc)
+      (values
+       (funcall	(lambda/cc (a)
+		  (+ a (let/cc k
+			 (setf cc k)
+			 (funcall k 1))))
+		10)
+       (funcall cc 11)))
+  11 21)
+
 ;;; let*
 (deftest let*-1
     (with-call/cc
