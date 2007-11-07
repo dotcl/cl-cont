@@ -1,5 +1,6 @@
 ;;; Code shared accross the entire weblocks framework
-(defpackage #:cont
+(defpackage #:cl-cont
+  (:nicknames #:cont)
   (:use :cl)
   (:documentation
    "A library that implements continuations by transforming Common

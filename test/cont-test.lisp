@@ -1,5 +1,6 @@
 
-(defpackage #:cont-test
+(defpackage #:cl-cont-test
+  (:nicknames #:cont-test)
   (:use :cl :cont :rtest)
   (:export #:test-cont))
 
