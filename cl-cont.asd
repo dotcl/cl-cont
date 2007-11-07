@@ -12,7 +12,7 @@
   :licence "LLGPL"
   :description "A library that implements continuations by
   transforming Common Lisp code to continuation passing style."
-  :depends-on ("closer-mop")
+  :depends-on (:closer-mop)
   :components ((:module
 		src
 		:components

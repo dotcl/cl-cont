@@ -11,7 +11,7 @@
   :author "Slava Akhmechet"
   :licence "LLGPL"
   :description "A test harness for cl-cont library."
-  :depends-on ("cl-cont" "rt")
+  :depends-on (:cl-cont :rt)
   :components ((:module
 		test
 		:components
