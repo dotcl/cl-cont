@@ -12,9 +12,9 @@
 
 (defparameter *special-form-transformers* (make-hash-table :size 25)
   "A hashtable that maps symbols to functions. Each function acts as a
-  transformer of a special form and must accept two arguments: an
-  s-expression to transform to CPS-style and an s-expression to
-  continue to.")
+  transformer of a special form and must accept three arguments: an
+  s-expression to transform to CPS-style, an an s-expression to
+  continue to, and an environment object.")
 
 (defmacro defcpstransformer (name lambda-list &body body)
   "A macro that allows defining special case CPS transformers."

@@ -4,12 +4,12 @@
 (export '(defun/cc))
 
 ;;; Nested WITH-CALL/CC
-(defcpstransformer with-call/cc (cons k-expr)
+(defcpstransformer with-call/cc (cons k-expr env)
   "Transforms a nested WITH-CALL/CC."
-  (expr-sequence->cps (cdr cons) k-expr))
+  (expr-sequence->cps (cdr cons) k-expr env))
 
 ;;; DEFUN
-(defcpstransformer defun (cons k-expr)
+(defcpstransformer defun (cons k-expr env)
   "Transforms DEFUN expression to CPS form."
   (let ((name (cadr cons))
 	(args (caddr cons))
@@ -30,11 +30,11 @@
        ,@body)))
 
 ;;; FUNCALL/APPLY
-(defcpstransformer funcall (cons k-expr)
+(defcpstransformer funcall (cons k-expr env)
   "Converts FUNCALL to FUNCALL/CC."
-  (funcall->cps (cdr cons) k-expr nil))
+  (funcall->cps (cdr cons) k-expr nil env))
 
-(defcpstransformer apply (cons k-expr)
+(defcpstransformer apply (cons k-expr env)
   "Converts APPLY to APPLY/CC."
-  (apply->cps (cdr cons) k-expr nil))
+  (apply->cps (cdr cons) k-expr nil env))
 

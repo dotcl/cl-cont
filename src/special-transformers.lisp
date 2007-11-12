@@ -23,7 +23,7 @@
 	     ht)
     nht))
 
-(defcpstransformer call/cc (cons k-expr)
+(defcpstransformer call/cc (cons k-expr env)
   "Implements call/cc operator."
   (declare (special *ctx*))
   (assert (= (length cons) 2)
@@ -33,7 +33,7 @@
 	    ,k-expr))
 
 ;;; QUOTE
-(defcpstransformer quote (cons k-expr)
+(defcpstransformer quote (cons k-expr env)
   "Converts a quoted datum to CPS style."
   `(funcall ,k-expr ,cons))
 
@@ -54,7 +54,7 @@
        do (incf c))
     (nthcdr c expr-list)))
 
-(defun expr-sequence->cps (expr-list k-expr &key env)
+(defun expr-sequence->cps (expr-list k-expr env)
   "Converts a list of expressions to be evaluated in order to CPS
   style."
   (expr->cps (car expr-list)
@@ -64,15 +64,15 @@
 		       (rest-args (gensym)))
 		   `(lambda (&optional ,r &rest ,rest-args)
 		      (declare (ignore ,r ,rest-args))
-		      ,(expr-sequence->cps (cdr expr-list) k-expr :env env))))
+		      ,(expr-sequence->cps (cdr expr-list) k-expr env))))
 	     env))
 
-(defcpstransformer progn (cons k-expr)
+(defcpstransformer progn (cons k-expr env)
   "Converts a PROGN form to CPS style."
-  (expr-sequence->cps (cdr cons) k-expr))
+  (expr-sequence->cps (cdr cons) k-expr env))
 
 ;;; BLOCK
-(defcpstransformer block (cons k-expr)
+(defcpstransformer block (cons k-expr env)
   "Transforms BLOCK to CPS style."
   (declare (special *ctx*))
   (assert (symbolp (cadr cons))
@@ -84,19 +84,20 @@
 	   (push k (gethash (cadr cons) (ctx-block-tags *ctx*)))
 	   `(let ((,k ,k-expr))
 	      (declare (ignorable ,k))
-	      ,(expr-sequence->cps (cddr cons) k)))
+	      ,(expr-sequence->cps (cddr cons) k env)))
       (pop (gethash (cadr cons) (ctx-block-tags *ctx*))))))
 
 ;;; RETURN-FROM
-(defcpstransformer return-from (cons k-expr)
+(defcpstransformer return-from (cons k-expr env)
   "Transforms RETURN-FROM to CPS style."
   (declare (ignore k-expr))
   (declare (special *ctx*))
   (expr->cps (caddr cons) (or (car (gethash (cadr cons) (ctx-block-tags *ctx*)))
-			      (error "There is no block named ~A" (cadr cons)))))
+			      (error "There is no block named ~A" (cadr cons)))
+	     env))
 
 ;;; IF
-(defcpstransformer if (cons k-expr)
+(defcpstransformer if (cons k-expr env)
   "Converts an IF form to CPS style."
   (let ((pred-expr (cadr cons))
 	(pred-true-expr (caddr cons))
@@ -107,8 +108,9 @@
 		 `(lambda (,pred &rest ,rest-args)
 		    (declare (ignore ,rest-args))
 		    (if ,pred
-			,(expr->cps pred-true-expr k-expr)
-			,(expr->cps pred-false-expr k-expr)))))))
+			,(expr->cps pred-true-expr k-expr env)
+			,(expr->cps pred-false-expr k-expr env))))
+	       env)))
 
 ;;; FUNCTION
 #+allegro (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -147,7 +149,7 @@
     (funcallable/cc (apply (f/cc-function fdesignator) k args))
     (t (funcall k (apply fdesignator args)))))
 
-(defun lambda-expr->cps (cons k-expr)
+(defun lambda-expr->cps (cons k-expr env)
   "Converts a LAMBDA expression to CPS style."
   (declare (ignore k-expr))
   (let ((arg-list (cadr cons))
@@ -156,9 +158,9 @@
       `(make-funcallable (lambda (,k ,@arg-list)
 			   (declare (ignorable ,k))
 			   ,@(extract-declarations body)
-			   ,(expr-sequence->cps (remove-declarations body) k))))))
+			   ,(expr-sequence->cps (remove-declarations body) k env))))))
 
-(defcpstransformer function (cons k-expr)
+(defcpstransformer function (cons k-expr env)
   (declare (special *ctx*))
   (let ((fdesignator (cadr cons)))
     (etypecase fdesignator
@@ -167,7 +169,7 @@
 		  `(funcall ,k-expr ,cons)))
       (list (ecase (car fdesignator)
 	      (setf `(funcall ,k-expr ,cons))
-	      (lambda `(funcall ,k-expr ,(lambda-expr->cps fdesignator k-expr))))))))
+	      (lambda `(funcall ,k-expr ,(lambda-expr->cps fdesignator k-expr env))))))))
 
 (defmacro lambda/cc (args-list &body body)
   "A helper macro that wraps LAMBDA definitions with WITH-CALL/CC."
@@ -176,7 +178,7 @@
        ,@body)))
 
 ;;; LET*
-(defun let*-varlist->cps (varlist let-body k-expr)
+(defun let*-varlist->cps (varlist let-body k-expr env)
   "Converts a list of variables from a LET* expression to CPS style."
   (let* ((var (car varlist))
 	 (var-name (if (consp var) (car var) var))
@@ -188,14 +190,15 @@
 			(declare (ignore ,rest-args))
 			,@(unless (cdr varlist)
 				  (extract-declarations let-body))
-			,(let*-varlist->cps (cdr varlist) let-body k-expr))))
-	(expr-sequence->cps (remove-declarations let-body) k-expr))))
+			,(let*-varlist->cps (cdr varlist) let-body k-expr env)))
+		   env)
+	(expr-sequence->cps (remove-declarations let-body) k-expr env))))
 
-(defcpstransformer let* (cons k-expr)
+(defcpstransformer let* (cons k-expr env)
   "Converts a LET* expression to CPS style."
   (let ((varlist (cadr cons))
 	(forms (cddr cons)))
-    (let*-varlist->cps varlist forms k-expr)))
+    (let*-varlist->cps varlist forms k-expr env)))
 
 ;;; LET
 (defun let-varlist->cons-pairs (varlist)
@@ -205,7 +208,7 @@
 		  (when (consp var) (cadr var))))
 	  varlist))
 
-(defcpstransformer let (cons k-expr)
+(defcpstransformer let (cons k-expr env)
   "Converts a LET expression to CPS style."
   (let ((varlist (let-varlist->cons-pairs (cadr cons)))
 	(forms (cddr cons)))
@@ -213,10 +216,11 @@
 		   ,@(extract-declarations forms)
 		   ,@(remove-declarations forms))
 		 ,@(mapcar #'cdr varlist))
-	       k-expr)))
+	       k-expr
+	       env)))
 
 ;;; SETQ
-(defun setq->cps (setq-pairs k-expr)
+(defun setq->cps (setq-pairs k-expr env)
   "Converts a list of SETQ pairs to CPS style."
   (when setq-pairs
     (expr->cps (cdar setq-pairs)
@@ -229,10 +233,11 @@
 		    (declare (ignore ,rest-args))
 		    ,@(if (cdr setq-pairs)
 			  `((setq ,(caar setq-pairs) ,i)
-			    ,(setq->cps (cdr setq-pairs) k-expr))
-			  `((funcall ,k-expr (setq ,(caar setq-pairs) ,i)))))))))
+			    ,(setq->cps (cdr setq-pairs) k-expr env))
+			  `((funcall ,k-expr (setq ,(caar setq-pairs) ,i))))))
+	       env)))
 
-(defcpstransformer setq (cons k-expr)
+(defcpstransformer setq (cons k-expr env)
   "Converts a SETQ expression to CPS style."
   (assert (evenp (length (cdr cons)))
 	  nil
@@ -241,15 +246,16 @@
    (loop for i in (cdr cons) by #'cddr
       for j in (cddr cons) by #'cddr
       collect (cons i j))
-   k-expr))
+   k-expr
+   env))
 
 ;;; THE
-(defcpstransformer the (cons k-expr)
+(defcpstransformer the (cons k-expr env)
   "Converts a THE expression to CPS style."
-  (expr->cps (caddr cons) k-expr))
+  (expr->cps (caddr cons) k-expr env))
 
 ;;; FLET/LABELS
-(defun transform-local-function (fn)
+(defun transform-local-function (fn env)
   "Transforms a local (FLET or LABELS) function to CPS style."
   (let ((fn-name (car fn))
 	(fn-args (cadr fn))
@@ -264,7 +270,7 @@
     `(,fn-name (,k ,@fn-args)
 	       (declare (ignorable ,k))
 	       ,@(extract-declarations fn-forms)
-	       ,(expr-sequence->cps (remove-declarations fn-forms) k))))
+	       ,(expr-sequence->cps (remove-declarations fn-forms) k env))))
 
 (defun declare-function-names-local (names)
   "Declares function names local in a transformation environment."
@@ -290,19 +296,21 @@
 	      ,@body)
 	 (undeclare-function-names-local ,fn-list)))))
 
-(defcpstransformer flet (cons k-expr)
+(defcpstransformer flet (cons k-expr env)
   "Converts an FLET expression to CPS style."
   (let ((fn-list (cadr cons))
 	(forms (cddr cons)))
     (assert (>= (length cons) 2)
 	    nil
 	    "Too few parameters to FLET")
-    `(flet ,(mapcar #'transform-local-function fn-list)
+    `(flet ,(mapcar (lambda (fn)
+		      (transform-local-function fn env))
+		    fn-list)
        ,@(extract-declarations forms)
        ,(with-local-function-names (mapcar #'car fn-list)
-           (expr-sequence->cps (remove-declarations forms) k-expr)))))
+           (expr-sequence->cps (remove-declarations forms) k-expr env)))))
 
-(defcpstransformer labels (cons k-expr)
+(defcpstransformer labels (cons k-expr env)
   "Converts a LABELS expression to CPS style."
   (let ((fn-list (cadr cons))
 	(forms (cddr cons)))
@@ -310,9 +318,11 @@
 	    nil
 	    "Too few parameters to LABELS")
     (with-local-function-names (mapcar #'car fn-list)
-      `(labels ,(mapcar #'transform-local-function fn-list)
+      `(labels ,(mapcar (lambda (fn)
+			  (transform-local-function fn env))
+			fn-list)
 	 ,@(extract-declarations forms)
-	 ,(expr-sequence->cps (remove-declarations forms) k-expr)))))
+	 ,(expr-sequence->cps (remove-declarations forms) k-expr env)))))
 
 ;;; MACROLET
 (defmacro transform-macrolet-forms (forms k-expr transf-env &environment env)
@@ -320,9 +330,9 @@
 it."
   (let ((*ctx* transf-env))
     (declare (special *ctx*))
-    (expr-sequence->cps forms k-expr :env env)))
+    (expr-sequence->cps forms k-expr env)))
 
-(defcpstransformer macrolet (cons k-expr)
+(defcpstransformer macrolet (cons k-expr env)
   "Converts a MACROLET expression to CPS style."
   (declare (special *ctx*))
   `(macrolet ,(cadr cons)
@@ -330,7 +340,7 @@ it."
      (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
 
 ;;; SYMBOL-MACROLET
-(defcpstransformer symbol-macrolet (cons k-expr)
+(defcpstransformer symbol-macrolet (cons k-expr env)
   "Converts a SYMBOL-MACROLET expression to CPS style."
   (declare (special *ctx*))
   `(symbol-macrolet ,(cadr cons)
@@ -338,59 +348,63 @@ it."
      (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
 
 ;;; LOCALLY
-(defcpstransformer locally (cons k-expr)
+(defcpstransformer locally (cons k-expr env)
   "Converts a LOCALLY expression to CPS style."
   `(locally
      ,@(extract-declarations (cdr cons))
-     ,(expr-sequence->cps (remove-declarations (cdr cons)) k-expr)))
+     ,(expr-sequence->cps (remove-declarations (cdr cons)) k-expr env)))
 
 ;;; CATCH/THROW
-(defcpstransformer catch (cons k-expr)
+(defcpstransformer catch (cons k-expr env)
   "Transforms a CATCH expression to CPS style."
   `(funcall ,k-expr ,cons))
 
 ;;; VALUES
-(defcpstransformer values (cons k-expr)
+(defcpstransformer values (cons k-expr env)
   "Transforms a VALUES expression to CPS style."
   (expr->cps `(list ,@(cdr cons))
 	     (let ((args (gensym))
 		   (rest (gensym)))
 	       `(lambda (,args &rest ,rest)
 		  (declare (ignore ,rest))
-		  (apply ,k-expr ,args)))))
+		  (apply ,k-expr ,args)))
+	     env))
 
 ;;; VALUES-LIST
-(defcpstransformer values-list (cons k-expr)
+(defcpstransformer values-list (cons k-expr env)
   "Transforms a VALUES-LIST expression to CPS style."
   (expr->cps (cadr cons)
 	     (let ((args (gensym))
 		   (rest (gensym)))
 	       `(lambda (,args &rest ,rest)
 		  (declare (ignore ,rest))
-		  (apply ,k-expr ,args)))))
+		  (apply ,k-expr ,args)))
+	     env))
 
 ;;; MULTIPLE-VALUE-CALL
-(defun accum-mc-sequence->cps (expr-list fn k-expr args)
+(defun accum-mc-sequence->cps (expr-list fn k-expr args env)
   "Converts a list of expressions to be evaluated in order to CPS
   style and collects their results (including multiple values)."
   (if (null expr-list)
       (expr->cps fn
 		 (let ((r (gensym)))
 		   `(lambda (,r)
-		      (apply/cc ,r ,k-expr (append ,@(reverse args))))))
+		      (apply/cc ,r ,k-expr (append ,@(reverse args)))))
+		 env)
       (expr->cps (car expr-list)
 		 (let ((rs (gensym)))
 		   `(lambda (&rest ,rs)
-		      ,(accum-mc-sequence->cps (cdr expr-list) fn k-expr (cons rs args)))))))
+		      ,(accum-mc-sequence->cps (cdr expr-list) fn k-expr (cons rs args) env)))
+		 env)))
 
-(defcpstransformer multiple-value-call (cons k-expr)
+(defcpstransformer multiple-value-call (cons k-expr env)
   "Transforms a MULTIPLE-VALUE-CALL expression to CPS style."
   (let ((fn (cadr cons))
 	(forms (cddr cons)))
-    (accum-mc-sequence->cps forms fn k-expr nil)))
+    (accum-mc-sequence->cps forms fn k-expr nil env)))
 
 ;;; MULTIPLE-VALUE-PROG1
-(defcpstransformer multiple-value-prog1 (cons k-expr)
+(defcpstransformer multiple-value-prog1 (cons k-expr env)
   "Transforms MULTIPLE-VALUE-PROG1 expression to CPS style."
   (let ((args (gensym))
 	(res (gensym)))
@@ -400,26 +414,27 @@ it."
 		    ,(cadr cons))
 		  ,@(cddr cons)
 		  (values-list ,args))
-	       k-expr)))
+	       k-expr
+	       env)))
 
 ;;; LOAD-TIME-VALUE
-(defcpstransformer load-time-value (cons k-expr)
+(defcpstransformer load-time-value (cons k-expr env)
   "Transforms LOAD-TIME-VALUE expression to CPS style."
   `(funcall ,k-expr ,cons))
 
 ;;; EVAL-WHEN
-(defcpstransformer eval-when (cons k-expr)
+(defcpstransformer eval-when (cons k-expr env)
   "Transforms EVAL-WHEN expression to CPS style."
   `(eval-when ,(cadr cons)
-     ,(expr-sequence->cps (cddr cons) k-expr)))
+     ,(expr-sequence->cps (cddr cons) k-expr env)))
 
 ;;; PROGV
-(defcpstransformer progv (cons k-expr)
+(defcpstransformer progv (cons k-expr env)
   "Basic support for now."
   `(funcall ,k-expr ,cons))
 
 ;;; UNWIND-PROTECT
-(defcpstransformer unwind-protect (cons k-expr)
+(defcpstransformer unwind-protect (cons k-expr env)
   "Basic support for UNWIND-PROTECT."
   `(funcall ,k-expr ,cons))
 
