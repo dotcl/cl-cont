@@ -471,6 +471,9 @@
   1 10)
 
 ;;; FLET
+(defmacro a (i j k) ; we need this to very flet/labels environment masking works
+  `(+ ,i ,j ,k))
+
 (deftest flet-1
     (with-call/cc
       (flet ((a (i j)

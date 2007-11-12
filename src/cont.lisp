@@ -8,7 +8,7 @@
 
 (in-package :cont)
 
-(export '(defcpstransformer cpstransformer))
+(export '(defcpstransformer cpstransformer copy-transformation-contect))
 
 (defparameter *special-form-transformers* (make-hash-table :size 25)
   "A hashtable that maps symbols to functions. Each function acts as a
@@ -38,3 +38,19 @@ transformation."
   (block-tags (make-hash-table))
   (local-functions nil))
 
+(defun copy-hash-table (ht)
+  "Shallow hashtable copy."
+  (let ((nht (make-hash-table :size (hash-table-size ht))))
+    (maphash (lambda (key value)
+	       (setf (gethash key nht) value))
+	     ht)
+    nht))
+
+(defun copy-transformation-contect (ctx)
+  "Copies transformation context. This is used for cases when the
+context has to be 'frozen' in time and used at a later transformation
+stage."
+  (let ((transf-env (copy-structure ctx)))
+    (setf (ctx-block-tags transf-env) (copy-hash-table (ctx-block-tags transf-env))
+	  (ctx-local-functions transf-env) (copy-list (ctx-local-functions transf-env)))
+    transf-env))

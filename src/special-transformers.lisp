@@ -15,14 +15,6 @@
   `(call/cc (lambda (,k)
 	      ,@body)))
 
-(defun copy-hash-table (ht)
-  "Shallow hashtable copy."
-  (let ((nht (make-hash-table :size (hash-table-size ht))))
-    (maphash (lambda (key value)
-	       (setf (gethash key nht) value))
-	     ht)
-    nht))
-
 (defcpstransformer call/cc (cons k-expr env)
   "Implements call/cc operator."
   (declare (special *ctx*))
@@ -255,8 +247,16 @@
   (expr->cps (caddr cons) k-expr env))
 
 ;;; FLET/LABELS
-(defun transform-local-function (fn env)
+(defmacro transform-forms-in-env (forms k-expr transf-env &environment env)
+  "Macroexpands code within a form that sets up a lexical environment
+and runs a CPS code walker on it."
+  (let ((*ctx* transf-env))
+    (declare (special *ctx*))
+    (expr-sequence->cps forms k-expr env)))
+
+(defun transform-local-function (fn env in-env-p)
   "Transforms a local (FLET or LABELS) function to CPS style."
+  (declare (special *ctx*))
   (let ((fn-name (car fn))
 	(fn-args (cadr fn))
 	(fn-forms (cddr fn))
@@ -270,7 +270,10 @@
     `(,fn-name (,k ,@fn-args)
 	       (declare (ignorable ,k))
 	       ,@(extract-declarations fn-forms)
-	       ,(expr-sequence->cps (remove-declarations fn-forms) k env))))
+	       ,(if in-env-p
+		    `(transform-forms-in-env ,(remove-declarations fn-forms) ,k
+					     ,(copy-transformation-contect *ctx*))
+		    (expr-sequence->cps (remove-declarations fn-forms) k env)))))
 
 (defun declare-function-names-local (names)
   "Declares function names local in a transformation environment."
@@ -298,20 +301,23 @@
 
 (defcpstransformer flet (cons k-expr env)
   "Converts an FLET expression to CPS style."
+  (declare (special *ctx*))
   (let ((fn-list (cadr cons))
 	(forms (cddr cons)))
     (assert (>= (length cons) 2)
 	    nil
 	    "Too few parameters to FLET")
     `(flet ,(mapcar (lambda (fn)
-		      (transform-local-function fn env))
+		      (transform-local-function fn env nil))
 		    fn-list)
        ,@(extract-declarations forms)
        ,(with-local-function-names (mapcar #'car fn-list)
-           (expr-sequence->cps (remove-declarations forms) k-expr env)))))
+          `(transform-forms-in-env ,(remove-declarations forms) ,k-expr
+				   ,(copy-transformation-contect *ctx*))))))
 
 (defcpstransformer labels (cons k-expr env)
   "Converts a LABELS expression to CPS style."
+  (declare (special *ctx*))
   (let ((fn-list (cadr cons))
 	(forms (cddr cons)))
     (assert (>= (length cons) 2)
@@ -319,25 +325,20 @@
 	    "Too few parameters to LABELS")
     (with-local-function-names (mapcar #'car fn-list)
       `(labels ,(mapcar (lambda (fn)
-			  (transform-local-function fn env))
+			  (transform-local-function fn env t))
 			fn-list)
 	 ,@(extract-declarations forms)
-	 ,(expr-sequence->cps (remove-declarations forms) k-expr env)))))
+	 (transform-forms-in-env ,(remove-declarations forms) ,k-expr
+				 ,(copy-transformation-contect *ctx*))))))
 
 ;;; MACROLET
-(defmacro transform-macrolet-forms (forms k-expr transf-env &environment env)
-  "Macroexpands code within a MACROLET and runs a CPS code walker on
-it."
-  (let ((*ctx* transf-env))
-    (declare (special *ctx*))
-    (expr-sequence->cps forms k-expr env)))
-
 (defcpstransformer macrolet (cons k-expr env)
   "Converts a MACROLET expression to CPS style."
   (declare (special *ctx*))
   `(macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
-     (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
+     (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
+			     ,(copy-transformation-contect *ctx*))))
 
 ;;; SYMBOL-MACROLET
 (defcpstransformer symbol-macrolet (cons k-expr env)
@@ -345,7 +346,8 @@ it."
   (declare (special *ctx*))
   `(symbol-macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
-     (transform-macrolet-forms ,(remove-declarations (cddr cons)) ,k-expr ,*ctx*)))
+     (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
+			     ,(copy-transformation-contect *ctx*))))
 
 ;;; LOCALLY
 (defcpstransformer locally (cons k-expr env)
