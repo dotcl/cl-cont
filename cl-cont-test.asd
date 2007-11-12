@@ -6,7 +6,6 @@
 
 (defsystem cl-cont-test
   :name "cl-cont-test"
-  :version "0.1"
   :maintainer "Slava Akhmechet"
   :author "Slava Akhmechet"
   :licence "LLGPL"

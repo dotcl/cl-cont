@@ -1,0 +1,8 @@
+
+*** 0.2 ***
+- Explicitly passing environment variable to all transformers
+- Fixing OpenMCL global environment issues
+- Fixing FLET/LABELS environment issues
+
+*** 0.1 ***
+- Initial release

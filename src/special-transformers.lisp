@@ -16,6 +16,7 @@
 	      ,@body)))
 
 (defcpstransformer call/cc (cons k-expr env)
+  (declare (ignore env))
   "Implements call/cc operator."
   (declare (special *ctx*))
   (assert (= (length cons) 2)
@@ -26,6 +27,7 @@
 
 ;;; QUOTE
 (defcpstransformer quote (cons k-expr env)
+  (declare (ignore env))
   "Converts a quoted datum to CPS style."
   `(funcall ,k-expr ,cons))
 
@@ -334,6 +336,7 @@ and runs a CPS code walker on it."
 ;;; MACROLET
 (defcpstransformer macrolet (cons k-expr env)
   "Converts a MACROLET expression to CPS style."
+  (declare (ignore env))
   (declare (special *ctx*))
   `(macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
@@ -343,6 +346,7 @@ and runs a CPS code walker on it."
 ;;; SYMBOL-MACROLET
 (defcpstransformer symbol-macrolet (cons k-expr env)
   "Converts a SYMBOL-MACROLET expression to CPS style."
+  (declare (ignore env))
   (declare (special *ctx*))
   `(symbol-macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
@@ -358,6 +362,7 @@ and runs a CPS code walker on it."
 
 ;;; CATCH/THROW
 (defcpstransformer catch (cons k-expr env)
+  (declare (ignore env))
   "Transforms a CATCH expression to CPS style."
   `(funcall ,k-expr ,cons))
 
@@ -422,6 +427,7 @@ and runs a CPS code walker on it."
 ;;; LOAD-TIME-VALUE
 (defcpstransformer load-time-value (cons k-expr env)
   "Transforms LOAD-TIME-VALUE expression to CPS style."
+  (declare (ignore env))
   `(funcall ,k-expr ,cons))
 
 ;;; EVAL-WHEN
@@ -433,10 +439,12 @@ and runs a CPS code walker on it."
 ;;; PROGV
 (defcpstransformer progv (cons k-expr env)
   "Basic support for now."
+  (declare (ignore env))
   `(funcall ,k-expr ,cons))
 
 ;;; UNWIND-PROTECT
 (defcpstransformer unwind-protect (cons k-expr env)
   "Basic support for UNWIND-PROTECT."
+  (declare (ignore env))
   `(funcall ,k-expr ,cons))
 
