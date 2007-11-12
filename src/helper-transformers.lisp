@@ -20,7 +20,8 @@
 				   ,@(extract-declarations body)
 				   (block ,name
 				     ,@(remove-declarations body)))
-				nil))
+				nil
+				env))
        (funcall ,k-expr ',name))))
 
 (defmacro defun/cc (name arglist &body body)
