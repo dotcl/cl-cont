@@ -1,6 +1,18 @@
 
 (in-package :cont-test)
 
+;; with-call/cc and global environment
+(defmacro with-call/cc-env-test-macro (a)
+  `(+ ,a ,a))
+
+(defun/cc with-call/cc-env-test-fn ()
+  (with-call/cc-env-test-macro 5))
+
+(deftest with-call/cc-env
+    (with-call/cc
+      (with-call/cc-env-test-fn))
+  10)
+
 ;; atom
 (deftest atom-1
     (with-call/cc 1)

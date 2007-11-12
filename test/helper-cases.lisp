@@ -2,7 +2,7 @@
 (in-package :cont-test)
 
 ;; nested with-call/cc
-(deftest with-call/cc-1
+(deftest with-call/cc-nested
     (let (cc)
       (values
        (with-call/cc
