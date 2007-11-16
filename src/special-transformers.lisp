@@ -90,6 +90,85 @@
 			      (error "There is no block named ~A" (cadr cons)))
 	     env))
 
+;;; TAGBODY
+(defun group-tagbody-forms (expr-list)
+  "Groups TAGBODY forms into a list where each item is a list with CAR
+being the go-tag name (or nil for default first tag), and CDR is a
+list of expressions for the tag."
+  (let (res)
+    (loop for expr in expr-list
+       initially (when (not (atom (car expr-list)))
+		   (push (list nil) res))
+       when (and (atom expr)
+		 (not (or (symbolp expr) (integerp expr))))
+       do (error "Atom is not a go-tag.") else 
+       when (and (atom expr)
+		 (or (symbolp expr) (integerp expr)))
+       do (push (list expr) res) else
+       do (push expr (car res)))
+    (reverse (mapcar #'reverse res))))
+
+(defun named-tb-forms>cps (forms k-expr env)
+  "Takes a list of named TAGBODY forms and converts CAR form to CPS."
+  (let* ((form (car forms))
+	 (tag-fn-name (car form))
+	 (tb-form (cddr form))
+	 (next-form (cadr forms))
+	 (next-tag-fn-name (car next-form))
+	 (args1 (gensym))
+	 (args2 (gensym)))
+    `(,tag-fn-name (&rest ,args1)
+		   (declare (ignore ,args1))
+		   ,(expr-sequence->cps tb-form
+					(if next-tag-fn-name
+					    `(function ,next-tag-fn-name)
+					    `(lambda (&rest ,args2)
+					       (declare (ignore ,args2))
+					       (funcall ,k-expr nil)))
+					env))))
+
+(defun duplicates-p (sequence &key (key #'identity) (test #'eql))
+  "Returns true if there are duplicate elements in the sequence, false
+  otherwise."
+  (eq (length sequence) (length (remove-duplicates sequence :key key :test test))))
+
+(defcpstransformer tagbody (cons k-expr env)
+  "Transforms TAGBODY to CPS style."
+  (declare (special *ctx*))
+  (let* ((tb-forms (group-tagbody-forms (cdr cons)))
+	 (named-tb-forms (mapcar (lambda (form)
+				   (cons (gensym) form))
+				 tb-forms)))
+    (assert (duplicates-p tb-forms :key #'car)
+	    nil
+	    "Make sure there are no duplicate tags")
+    (unwind-protect
+	 (progn
+	   (mapc (lambda (form)
+		   (push (car form) (gethash (cadr form) (ctx-go-tags *ctx*))))
+		 (if (caar tb-forms)
+		     named-tb-forms
+		     (cdr named-tb-forms)))
+	   `(labels (,@(maplist (lambda (forms)
+				  (named-tb-forms>cps forms k-expr env))
+				named-tb-forms))
+	      ,(if (null tb-forms)
+		   `(funcall ,k-expr nil)
+		   `(,(caar named-tb-forms)))))
+      (mapc (lambda (form)
+	      (pop (gethash (cadr form) (ctx-go-tags *ctx*))))
+	    (if (caar tb-forms)
+		named-tb-forms
+		(cdr named-tb-forms))))))
+
+;;; GO
+(defcpstransformer go (cons k-expr env)
+  "Transforms GO to CPS style."
+  (declare (ignore k-expr env))
+  (declare (special *ctx*))
+  `(,(or (car (gethash (cadr cons) (ctx-go-tags *ctx*)))
+	 (error "There is no go-tag named ~A" (cadr cons)))))
+
 ;;; IF
 (defcpstransformer if (cons k-expr env)
   "Converts an IF form to CPS style."

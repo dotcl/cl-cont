@@ -36,6 +36,7 @@
   "A structure that represents a context used during call/cc
 transformation."
   (block-tags (make-hash-table))
+  (go-tags (make-hash-table))
   (local-functions nil))
 
 (defun copy-hash-table (ht)
@@ -52,5 +53,6 @@ context has to be 'frozen' in time and used at a later transformation
 stage."
   (let ((transf-env (copy-structure ctx)))
     (setf (ctx-block-tags transf-env) (copy-hash-table (ctx-block-tags transf-env))
+	  (ctx-go-tags transf-env) (copy-hash-table (ctx-go-tags transf-env))
 	  (ctx-local-functions transf-env) (copy-list (ctx-local-functions transf-env)))
     transf-env))

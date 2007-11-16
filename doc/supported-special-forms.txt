@@ -9,7 +9,7 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 + 3. eval-when
 + 4. flet
 + 5. function
-  6. go
++ 6. go
 + 7. if
 + 8. labels
 + 9. let
@@ -25,7 +25,7 @@ Special forms (http://www.lisp.org/HyperSpec/Body/sec_3-1-2-1-2-1.html)
 +19. return-from
 +20. setq
 +21. symbol-macrolet
- 22. tagbody
++22. tagbody
 +23. the
 -24. throw
 -25. unwind-protect

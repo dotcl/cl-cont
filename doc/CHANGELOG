@@ -1,3 +1,8 @@
+*** 0.3 ***
+- Adding support for TAGBODY/GO
+
+*** 0.2.1 ***
+- Adding support for WITHOUT-CALL/CC
 
 *** 0.2 ***
 - Explicitly passing environment variable to all transformers

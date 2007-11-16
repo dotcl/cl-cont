@@ -215,6 +215,90 @@
 	     3)))
   4)
 
+;; test tagbody
+(deftest tagbody-1
+    (with-call/cc (tagbody))
+  nil)
+
+(deftest tagbody-2
+    (let (cc results)
+      (values
+       (with-call/cc (tagbody (push
+			       (+ 1 (let/cc k
+				      (setf cc k)
+				      (funcall k 2)))
+			       results)))
+       (funcall cc 10)
+       (reverse results)))
+  nil nil (3 11))
+
+(deftest tagbody-3
+    (let (cc results)
+      (values
+       (with-call/cc (tagbody 1 (push 
+				 (+ 1 (let/cc k
+					(setf cc k)
+					(funcall k 2)))
+				 results)))
+       (funcall cc 10)
+       (reverse results)))
+  nil nil (3 11))
+
+(deftest tagbody-4
+    (let (cc results)
+      (values
+       (with-call/cc (tagbody 1 (+ 1 2) 2 (push
+					   (+ (let/cc k
+						(setf cc k)
+						(funcall k 3)) 4)
+					   results)))
+       (funcall cc 10)
+       (reverse results)))
+  nil nil (7 14))
+
+(deftest tagbody-5
+    (with-call/cc (tagbody 1 (+ 1 2) 2 (+ 3 4) 3 (+ 5 6)))
+  nil)
+
+(deftest tagbody-6
+    (let (cc)
+      (values
+       (with-call/cc
+	 (let (i j)
+	   (tagbody
+	    a
+	      (setf j (let/cc k
+			(setf cc k)
+			(funcall k 1)))
+	      (setf i 0)
+	    b
+	      (incf i j)
+	      (when (< i 10)
+		(go b)))
+	   i))
+       (funcall cc 3)))
+  10 12)
+
+(deftest tagbody-7	   ; loop normally expands to tagbody/go forms
+    (let (cc)
+      (values
+       (with-call/cc
+	 (loop for i in (list 1 2 
+			      (let/cc k
+				(setf cc k)
+				(funcall k 3))
+			      4 5)
+	    when (oddp i)
+	    collect i))
+       (funcall cc 7)
+       (funcall cc 2)))
+  (1 3 5) (1 7 5) (1 5))
+
+(deftest tagbody-8
+    (with-call/cc
+      (tagbody 1))
+  nil)
+
 ;; test if
 (deftest if-1
     (with-call/cc
