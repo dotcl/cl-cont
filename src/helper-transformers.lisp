@@ -1,12 +1,17 @@
 
 (in-package :cont)
 
-(export '(defun/cc))
+(export '(defun/cc without-call/cc))
 
 ;;; Nested WITH-CALL/CC
 (defcpstransformer with-call/cc (cons k-expr env)
   "Transforms a nested WITH-CALL/CC."
   (expr-sequence->cps (cdr cons) k-expr env))
+
+;;; Turning off WITH-CALL/CC
+(defcpstransformer without-call/cc (cons k-expr env)
+  (declare (ignore env))
+  `(funcall ,k-expr (progn ,@(cdr cons))))
 
 ;;; DEFUN
 (defcpstransformer defun (cons k-expr env)

@@ -12,6 +12,29 @@
        (funcall cc 4)))
   3 5)
 
+;; WITHOUT-CALL/CC
+(deftest without-call/cc-1
+    (let (cc)
+      (values
+       (with-call/cc
+	 1 (without-call/cc 2 3) (let/cc k
+				   (setf cc k)
+				   (funcall k 4)))
+       (funcall cc 10)))
+  4 10)
+
+(deftest without-call/cc-2
+    (multiple-value-bind (res err)
+	(ignore-errors
+	  (with-call/cc
+	    1 (without-call/cc
+		  (let/cc k
+		    (funcall k 4))
+		3)
+	    4))
+      (values res (not (null err))))
+  nil t)
+
 ;;; DEFUN
 (defun/cc test-fn/cc-1 (a b)
   (+ a b))
