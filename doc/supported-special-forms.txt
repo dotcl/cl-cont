@@ -34,4 +34,6 @@ Additional constructs
 + 1. defun (shortcut: defun/cc)
 + 2. funcall
 + 3. apply
++ 4. without-call/cc
++ 5. lambda/cc
 
