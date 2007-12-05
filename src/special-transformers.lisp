@@ -216,11 +216,11 @@ list of expressions for the tag."
     (funcallable/cc (apply (f/cc-function fdesignator) k args))
     (t (funcall k (apply fdesignator args)))))
 
-(defun apply/cc (fdesignator k args)
+(defun apply/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
   (typecase fdesignator
-    (funcallable/cc (apply (f/cc-function fdesignator) k args))
-    (t (funcall k (apply fdesignator args)))))
+    (funcallable/cc (apply #'apply (f/cc-function fdesignator) k args))
+    (t (funcall k (apply #'apply fdesignator args)))))
 
 (defun lambda-expr->cps (cons k-expr env)
   "Converts a LAMBDA expression to CPS style."

@@ -1,3 +1,6 @@
+*** 0.3.1 ***
+- Fixing APPLY/CC to accept multiple arguments
+
 *** 0.3 ***
 - Adding support for TAGBODY/GO
 

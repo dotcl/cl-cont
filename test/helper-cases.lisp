@@ -90,3 +90,20 @@
        (funcall cc 2)))
   7 8)
 
+(deftest explicit-apply-2
+    (let (cc)
+      (values
+       (with-call/cc (+ 1 (apply (lambda (a b c)
+				     (+ (let/cc k
+					  (setf cc k)
+					  (funcall k 1))
+					a b c))
+				 3 4 (list 5))))
+       (funcall cc 2)))
+  14 15)
+
+(deftest explicit-apply-3
+    (with-call/cc 
+      (apply #'+ 1 2 3 (list 4 5)))
+  15)
+
