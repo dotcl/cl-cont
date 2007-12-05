@@ -1,5 +1,7 @@
 *** 0.3.1 ***
 - Fixing APPLY/CC to accept multiple arguments
+- Adding special handling for LIST on ACL due to overly optimistic
+  compiler optimizations
 
 *** 0.3 ***
 - Adding support for TAGBODY/GO

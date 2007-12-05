@@ -44,3 +44,17 @@
   "Converts APPLY to APPLY/CC."
   (apply->cps (cdr cons) k-expr nil env))
 
+;;; LIST on ACL
+#+allegro
+(defun list->cons (members)
+  "Accepts a list of elements and compiles them into recursive CONS
+call. Effectively, we're compiling LIST call."
+  (when members
+    `(cons ,(car members) ,(list->cons (cdr members)))))
+
+#+allegro
+(defcpstransformer list (cons k-expr env)
+  "Allegro seems to compile lists in a special way that
+breaks some CL-CONT code."
+  (expr->cps (list->cons (cdr cons)) k-expr env))
+

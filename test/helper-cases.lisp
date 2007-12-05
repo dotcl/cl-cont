@@ -107,3 +107,10 @@
       (apply #'+ 1 2 3 (list 4 5)))
   15)
 
+;;; LIST on ACL
+(defun list-on-acl ()
+  (with-call/cc (list 1 2)))
+
+#+allegro (deftest list-on-acl-1
+	      (list-on-acl)
+	    (1 2))
