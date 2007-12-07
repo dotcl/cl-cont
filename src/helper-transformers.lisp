@@ -33,6 +33,11 @@
   "A helper macro to define a function that supports CALL/CC."
   `(with-call/cc
      (defun ,name ,arglist
+       ;; If CL-CONT is compiled on CMUCL, we need to introduce this
+       ;; declaration to turn off compilation for transformed
+       ;; code. CMU compiler tends to optimize transformed code in
+       ;; ways that don't work.
+       #+cmu (declare (optimize (speed 0) (debug 3)))
        ,@body)))
 
 ;;; FUNCALL/APPLY

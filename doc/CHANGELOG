@@ -1,3 +1,7 @@
+*** 0.3.2 ***
+- CMUCL compiler optimizations break the transformer for large chucks
+  of code. Turning off the optimizer for defun/cc.
+
 *** 0.3.1 ***
 - Fixing APPLY/CC to accept multiple arguments
 - Adding special handling for LIST on ACL due to overly optimistic
