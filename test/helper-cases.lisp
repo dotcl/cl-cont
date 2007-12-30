@@ -83,6 +83,19 @@
        (funcall cc 2)))
   7 8)
 
+(defun/cc add/cc-test (a b)
+  (+ a b))
+
+(deftest explicit-funcall-2
+    (with-call/cc
+      (funcall 'add/cc-test 3 4))
+  7)
+
+(deftest explicit-funcall-3
+    (with-call/cc
+      (funcall #'add/cc-test 3 4))
+  7)
+
 ;;; explicit APPLY
 (deftest explicit-apply-1
     (let (cc)
@@ -110,6 +123,16 @@
     (with-call/cc 
       (apply #'+ 1 2 3 (list 4 5)))
   15)
+
+(deftest explicit-apply-4
+    (with-call/cc 
+      (apply 'add/cc-test 3 (list 4)))
+  7)
+
+(deftest explicit-apply-5
+    (with-call/cc 
+      (apply #'add/cc-test 3 (list 4)))
+  7)
 
 ;;; LIST on ACL
 (defun list-on-acl ()
