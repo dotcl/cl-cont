@@ -35,6 +35,10 @@
       (values res (not (null err))))
   nil t)
 
+(deftest without-call/cc-3
+    (without-call/cc 1 2 3)
+  3)
+
 ;;; DEFUN
 (defun/cc test-fn/cc-1 (a b)
   (+ a b))
