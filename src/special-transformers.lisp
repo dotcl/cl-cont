@@ -353,7 +353,7 @@ and runs a CPS code walker on it."
 	       ,@(extract-declarations fn-forms)
 	       ,(if in-env-p
 		    `(transform-forms-in-env ,(remove-declarations fn-forms) ,k
-					     ,(copy-transformation-contect *ctx*))
+					     ,(copy-transformation-context *ctx*))
 		    (expr-sequence->cps (remove-declarations fn-forms) k env)))))
 
 (defun declare-function-names-local (names)
@@ -394,7 +394,7 @@ and runs a CPS code walker on it."
        ,@(extract-declarations forms)
        ,(with-local-function-names (mapcar #'car fn-list)
           `(transform-forms-in-env ,(remove-declarations forms) ,k-expr
-				   ,(copy-transformation-contect *ctx*))))))
+				   ,(copy-transformation-context *ctx*))))))
 
 (defcpstransformer labels (cons k-expr env)
   "Converts a LABELS expression to CPS style."
@@ -410,7 +410,7 @@ and runs a CPS code walker on it."
 			fn-list)
 	 ,@(extract-declarations forms)
 	 (transform-forms-in-env ,(remove-declarations forms) ,k-expr
-				 ,(copy-transformation-contect *ctx*))))))
+				 ,(copy-transformation-context *ctx*))))))
 
 ;;; MACROLET
 (defcpstransformer macrolet (cons k-expr env)
@@ -420,7 +420,7 @@ and runs a CPS code walker on it."
   `(macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
      (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
-			     ,(copy-transformation-contect *ctx*))))
+			     ,(copy-transformation-context *ctx*))))
 
 ;;; SYMBOL-MACROLET
 (defcpstransformer symbol-macrolet (cons k-expr env)
@@ -430,7 +430,7 @@ and runs a CPS code walker on it."
   `(symbol-macrolet ,(cadr cons)
      ,@(extract-declarations (cddr cons))
      (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
-			     ,(copy-transformation-contect *ctx*))))
+			     ,(copy-transformation-context *ctx*))))
 
 ;;; LOCALLY
 (defcpstransformer locally (cons k-expr env)
