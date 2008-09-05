@@ -215,6 +215,12 @@ list of expressions for the tag."
   (let ((lookup (if (symbolp fdesignator)
 		    (fdefinition fdesignator)
 		    fdesignator)))
+    #+(or clozure mcl)			;see test clozure-broken-typep
+    (if (typep lookup (load-time-value (find-class 'funcallable/cc)))
+	(f/cc-function lookup)
+	(lambda(k &rest args)
+	  (funcall k (apply lookup args))))
+    #-(or clozure mcl)
     (typecase lookup
       (funcallable/cc (f/cc-function lookup))
       (t (lambda(k &rest args)

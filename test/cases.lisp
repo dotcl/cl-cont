@@ -893,3 +893,13 @@
 	2 3 4))
   1)
 
+;;; tests for a bug in Clozure
+(deftest clozure-broken-typep
+    (let ((fun #'with-call/cc-env-test-fn))
+      (values (typep #'with-call/cc-env-test-fn 'cl-cont::funcallable/cc)
+	      (typep fun 'cl-cont::funcallable/cc)
+	      (typep fun (find-class 'cl-cont::funcallable/cc))))
+  t t t)
+
+#+(or clozure mcl)
+(pushnew 'clozure-broken-typep rtest::*expected-failures*)
