@@ -230,6 +230,7 @@ list of expressions for the tag."
 (defun funcall/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
   (apply (fdesignator-to-function/cc fdesignator) k args))
+#-sbcl
 (declaim (inline funcall/cc))
 
 (defun apply/cc (fdesignator k &rest args)
