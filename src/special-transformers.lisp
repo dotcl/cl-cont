@@ -218,7 +218,7 @@ list of expressions for the tag."
     (typecase lookup
       (funcallable/cc (f/cc-function lookup))
       (t (lambda(k &rest args)
-	   (funcall k (apply lookup args)))))))
+	   (multiple-value-call k (apply lookup args)))))))
 (declaim (inline fdesignator-to-function/cc))
 
 (defun funcall/cc (fdesignator k &rest args)

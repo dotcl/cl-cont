@@ -90,6 +90,13 @@
     (with-call/cc (list (values)))
   (nil))
 
+(deftest funcall-9-multiple-values-return
+    (flet ((some-vals () (values 42 84)))
+      (let (a b)
+	(with-call/cc (multiple-value-setq (a b) (some-vals)))
+	(values a b)))
+  42 84)
+
 ;; quote
 (deftest quote-1
     (with-call/cc 'a)
