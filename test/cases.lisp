@@ -900,6 +900,3 @@
 	      (typep fun 'cl-cont::funcallable/cc)
 	      (typep fun (find-class 'cl-cont::funcallable/cc))))
   t t t)
-
-#+(or clozure mcl)
-(pushnew 'clozure-broken-typep rtest::*expected-failures*)
