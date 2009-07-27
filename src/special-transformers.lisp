@@ -210,6 +210,7 @@ list of expressions for the tag."
 		       (apply (f/cc-function ,inst) #'values args))))
     inst))
 
+(declaim (inline fdesignator-to-function/cc))
 (defun fdesignator-to-function/cc (fdesignator)
   "Converts a function designator to a function/cc."
   (let ((lookup (if (symbolp fdesignator)
@@ -219,18 +220,14 @@ list of expressions for the tag."
       (funcallable/cc (f/cc-function lookup))
       (t (lambda(k &rest args)
 	   (multiple-value-call k (apply lookup args)))))))
-(declaim (inline fdesignator-to-function/cc))
 
-(defun funcall/cc (fdesignator k &rest args)
+(defmacro funcall/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
-  (apply (fdesignator-to-function/cc fdesignator) k args))
-#-sbcl
-(declaim (inline funcall/cc))
+  `(funcall (fdesignator-to-function/cc ,fdesignator) ,k ,@args))
 
-(defun apply/cc (fdesignator k &rest args)
+(defmacro apply/cc (fdesignator k &rest args)
   "Implements FUNCALL for a CPS converter."
-  (apply #'apply (fdesignator-to-function/cc fdesignator) k args))
-(declaim (inline apply/cc))
+  `(apply (fdesignator-to-function/cc ,fdesignator) ,k ,@args))
 
 (defun lambda-expr->cps (cons k-expr env)
   "Converts a LAMBDA expression to CPS style."
