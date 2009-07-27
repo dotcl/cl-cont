@@ -198,6 +198,28 @@ list of expressions for the tag."
   (:metaclass c2mop:funcallable-standard-class)
   (:documentation "A structure that represents a funcallable object"))
 
+(defmethod documentation ((obj funcallable/cc) (doc-type (eql 'function)))
+  (documentation (f/cc-function obj) doc-type))
+
+(defmethod (setf documentation) (value (obj funcallable/cc) (doc-type (eql 'function)))
+  (setf (documentation (f/cc-function obj) doc-type) value))
+
+(defmethod documentation :around ((obj symbol) (doc-type (eql 'function)))
+  (let ((fn (fdefinition obj)))
+    (if (typep fn 'funcallable/cc)
+      (documentation (f/cc-function fn) doc-type)
+      (call-next-method))))
+
+(defmethod (setf documentation) :around (value (obj symbol) (doc-type (eql 'function)))
+  (let ((fn (fdefinition obj)))
+    (if (typep fn 'funcallable/cc)
+      (setf (documentation (f/cc-function fn) doc-type) value)
+      (call-next-method))))
+
+(defmethod describe-object :after ((obj funcallable/cc) stream)
+  (format stream "Function: ~A~%Documentation: ~A" (ignore-errors (f/cc-function obj))
+          (documentation obj 'function)))
+
 (defun make-funcallable (function)
   "Creates an instance of FUNCALLABLE/CC."
   (let ((inst (make-instance 'funcallable/cc :function function)))
