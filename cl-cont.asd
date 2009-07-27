@@ -6,9 +6,9 @@
 
 (defsystem cl-cont
   :name "cl-cont"
-  :version "0.3.7"
-  :maintainer "Slava Akhmechet"
-  :author "Slava Akhmechet"
+  :version "0.3.8"
+  :maintainer "Leslie P. Polzer <polzer@gnu.org>"
+  :author "Slava Akhmechet, Stephen Compall <s11@member.fsf.org>, John Fremlin, Leslie P. Polzer <polzer@gnu.org>"
   :licence "LLGPL"
   :description "A library that implements continuations by
   transforming Common Lisp code to continuation passing style."
