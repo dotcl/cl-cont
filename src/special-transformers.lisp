@@ -205,13 +205,13 @@ list of expressions for the tag."
   (setf (documentation (f/cc-function obj) doc-type) value))
 
 (defmethod documentation :around ((obj symbol) (doc-type (eql 'function)))
-  (let ((fn (fdefinition obj)))
+  (let ((fn (when (fboundp obj) (fdefinition obj))))
     (if (typep fn 'funcallable/cc)
       (documentation (f/cc-function fn) doc-type)
       (call-next-method))))
 
 (defmethod (setf documentation) :around (value (obj symbol) (doc-type (eql 'function)))
-  (let ((fn (fdefinition obj)))
+  (let ((fn (when (fboundp obj) (fdefinition obj))))
     (if (typep fn 'funcallable/cc)
       (setf (documentation (f/cc-function fn) doc-type) value)
       (call-next-method))))
