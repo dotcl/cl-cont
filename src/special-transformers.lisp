@@ -461,6 +461,14 @@ and runs a CPS code walker on it."
      (transform-forms-in-env ,(remove-declarations (cddr cons)) ,k-expr
 			     ,(copy-transformation-context *ctx*))))
 
+;;; CCL:COMPILER-LET
+#+openmcl
+(defcpstransformer ccl:compiler-let (cons k-expr env)
+  `(ccl:compiler-let ,(cadr cons)
+     ,@(extract-declarations (cddr cons))
+     ,(expr-sequence->cps (remove-declarations (cddr cons)) k-expr
+env)))
+
 ;;; LOCALLY
 (defcpstransformer locally (cons k-expr env)
   "Converts a LOCALLY expression to CPS style."
