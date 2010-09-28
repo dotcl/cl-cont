@@ -204,18 +204,6 @@ list of expressions for the tag."
 (defmethod (setf documentation) (value (obj funcallable/cc) (doc-type (eql 'function)))
   (setf (documentation (f/cc-function obj) doc-type) value))
 
-(defmethod documentation :around ((obj symbol) (doc-type (eql 'function)))
-  (let ((fn (when (fboundp obj) (fdefinition obj))))
-    (if (typep fn 'funcallable/cc)
-      (documentation (f/cc-function fn) doc-type)
-      (call-next-method))))
-
-(defmethod (setf documentation) :around (value (obj symbol) (doc-type (eql 'function)))
-  (let ((fn (when (fboundp obj) (fdefinition obj))))
-    (if (typep fn 'funcallable/cc)
-      (setf (documentation (f/cc-function fn) doc-type) value)
-      (call-next-method))))
-
 (defmethod describe-object :after ((obj funcallable/cc) stream)
   (format stream "Function: ~A~%Documentation: ~A" (ignore-errors (f/cc-function obj))
           (documentation obj 'function)))
