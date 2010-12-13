@@ -466,8 +466,11 @@ env)))
 
 ;;; CATCH/THROW
 (defcpstransformer catch (cons k-expr env)
-  (declare (ignore env))
   "Transforms a CATCH expression to CPS style."
+  `(catch ,(cadr cons)
+     ,(expr-sequence->cps (cddr cons) k-expr env)))
+
+(defcpstransformer throw (cons k-expr env)
   `(funcall ,k-expr ,cons))
 
 ;;; VALUES

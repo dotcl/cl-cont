@@ -310,6 +310,18 @@
       (tagbody 1))
   nil)
 
+(deftest tagbody-9
+    (with-call/cc
+      (let (result)
+        (tagbody
+           (catch 'a
+             (setq result 10)
+             (go a))
+           (setq result 20)
+         a)
+        result))
+  10)
+
 ;; test if
 (deftest if-1
     (with-call/cc
@@ -792,6 +804,40 @@
     (with-call/cc (catch 'foo
 		    1 (throw 'foo 2) 3))
   2)
+
+(deftest catch/throw-3
+  (with-call/cc
+    (catch 'foo (values))))
+
+(deftest catch/throw-4
+    (with-call/cc
+      (catch 'foo (values 1 2 3)))
+  1 2 3)
+
+(deftest catch/throw-5
+  (with-call/cc
+    (catch 'foo 'a (throw 'foo (values)) 'c)))
+
+(deftest catch/throw-6
+    (with-call/cc
+      (catch 'foo 'a (throw 'foo (values 1 2 3)) 'c))
+  1 2 3)
+
+(deftest catch/throw-7
+    (with-call/cc
+      (flet ((%f (x) (throw 'foo x)))
+        (catch 'foo
+          (%f 'good)
+          'bad)))
+  good)
+
+(deftest catch/throw-8
+    (with-call/cc
+      (labels ((%f (x) (throw 'foo x)))
+        (catch 'foo
+          (%f 'good)
+          'bad)))
+  good)
 
 ;;; VALUES
 (deftest values-1
