@@ -1,14 +1,11 @@
 
-(in-package :cont)
-
-(export '(expr-sequence->cps call/cc let/cc lambda/cc))
+(in-package :cl-cont)
 
 ;;; CALL/CC and friends
 (defun call/cc (cc)
   "Implements delimited continuations."
   (declare (ignore cc))
-  (error "Please ensure CALL/CC is caled from within WITH-CALL/CC
-  macro."))
+  (error "Please ensure CALL/CC is called from within WITH-CALL/CC macro."))
 
 (defmacro let/cc (k &body body)
   "A shortcut for CALL/CC."
@@ -16,14 +13,19 @@
 	      ,@body)))
 
 (defcpstransformer call/cc (cons k-expr env)
-  (declare (ignore env))
   "Implements call/cc operator."
-  (declare (special *ctx*))
   (assert (= (length cons) 2)
 	  nil
 	  "Please ensure that CALL/CC has one argument")
-  `(funcall ,(cadr cons)
-	    ,k-expr))
+  (expr->cps (cadr cons)
+	     (let ((f (gensym))
+		   (rest-args (gensym))
+		   (k (gensym)))
+	       `(let ((,k ,k-expr))
+		  (lambda (&optional ,f &rest ,rest-args)
+		    (declare (ignore ,rest-args))
+		    (funcall/cc ,f #'values ,k))))
+	     env))
 
 ;;; QUOTE
 (defcpstransformer quote (cons k-expr env)
@@ -228,7 +230,7 @@ list of expressions for the tag."
 		    fdesignator)))
     (typecase lookup
       (funcallable/cc (f/cc-function lookup))
-      (t (lambda(k &rest args)
+      (t (lambda (k &rest args)
 	   (multiple-value-call k (apply lookup args)))))))
 
 (defmacro funcall/cc (fdesignator k &rest args)
@@ -312,20 +314,21 @@ list of expressions for the tag."
 ;;; SETQ
 (defun setq->cps (setq-pairs k-expr env)
   "Converts a list of SETQ pairs to CPS style."
-  (when setq-pairs
-    (expr->cps (cdar setq-pairs)
-	       (let ((i (gensym))
-		     (rest-args (gensym)))
-		 (assert (symbolp (caar setq-pairs))
-			 nil
-			 "The value ~A is not a symbol" (caar setq-pairs))
-		 `(lambda (,i &rest ,rest-args)
-		    (declare (ignore ,rest-args))
-		    ,@(if (cdr setq-pairs)
-			  `((setq ,(caar setq-pairs) ,i)
-			    ,(setq->cps (cdr setq-pairs) k-expr env))
-			  `((funcall ,k-expr (setq ,(caar setq-pairs) ,i))))))
-	       env)))
+  (if setq-pairs
+      (expr->cps (cdar setq-pairs)
+		 (let ((i (gensym))
+		       (rest-args (gensym)))
+		   (assert (symbolp (caar setq-pairs))
+			   nil
+			   "The value ~A is not a symbol" (caar setq-pairs))
+		   `(lambda (,i &rest ,rest-args)
+		      (declare (ignore ,rest-args))
+		      ,@(if (cdr setq-pairs)
+			    `((setq ,(caar setq-pairs) ,i)
+			      ,(setq->cps (cdr setq-pairs) k-expr env))
+			    `((funcall ,k-expr (setq ,(caar setq-pairs) ,i))))))
+		 env)
+    `(funcall ,k-expr nil)))
 
 (defcpstransformer setq (cons k-expr env)
   "Converts a SETQ expression to CPS style."
@@ -471,6 +474,7 @@ env)))
      ,(expr-sequence->cps (cddr cons) k-expr env)))
 
 (defcpstransformer throw (cons k-expr env)
+  (declare (ignore env))
   `(funcall ,k-expr ,cons))
 
 ;;; VALUES
@@ -496,26 +500,27 @@ env)))
 	     env))
 
 ;;; MULTIPLE-VALUE-CALL
-(defun accum-mc-sequence->cps (expr-list fn k-expr args env)
+(defun accum-mc-sequence->cps (expr-list fn-var k-expr args env)
   "Converts a list of expressions to be evaluated in order to CPS
   style and collects their results (including multiple values)."
   (if (null expr-list)
-      (expr->cps fn
-		 (let ((r (gensym)))
-		   `(lambda (,r)
-		      (apply/cc ,r ,k-expr (append ,@(reverse args)))))
-		 env)
+      `(apply/cc ,fn-var ,k-expr (append ,@(reverse args)))
       (expr->cps (car expr-list)
 		 (let ((rs (gensym)))
 		   `(lambda (&rest ,rs)
-		      ,(accum-mc-sequence->cps (cdr expr-list) fn k-expr (cons rs args) env)))
+		      ,(accum-mc-sequence->cps (cdr expr-list) fn-var k-expr (cons rs args) env)))
 		 env)))
 
 (defcpstransformer multiple-value-call (cons k-expr env)
   "Transforms a MULTIPLE-VALUE-CALL expression to CPS style."
-  (let ((fn (cadr cons))
-	(forms (cddr cons)))
-    (accum-mc-sequence->cps forms fn k-expr nil env)))
+  (let* ((fn (cadr cons))
+	 (fn-var (gensym))
+	 (forms (cddr cons)))
+    (expr->cps fn (let ((r (gensym)))
+		    `(lambda (,fn-var &rest ,r)
+		       (declare (ignore ,r))
+		       ,(accum-mc-sequence->cps forms fn-var k-expr nil env)))
+	       env)))
 
 ;;; MULTIPLE-VALUE-PROG1
 (defcpstransformer multiple-value-prog1 (cons k-expr env)

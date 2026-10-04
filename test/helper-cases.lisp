@@ -39,6 +39,17 @@
     (without-call/cc 1 2 3)
   3)
 
+;;; Nested CALL/CC
+(deftest nested-1
+    (let (cc)
+      (values (with-call/cc
+		(* 2 (let/cc k
+		       (funcall k (+ 3 (let/cc kk
+					 (setf cc kk)
+					 (funcall kk 1)))))))
+	      (funcall cc 3)))
+  8 12)
+
 ;;; DEFUN
 (defun/cc test-fn/cc-1 (a b)
   (+ a b))

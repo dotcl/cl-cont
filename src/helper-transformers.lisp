@@ -1,7 +1,5 @@
 
-(in-package :cont)
-
-(export '(defun/cc without-call/cc))
+(in-package :cl-cont)
 
 ;;; Nested WITH-CALL/CC
 (defcpstransformer with-call/cc (cons k-expr env)

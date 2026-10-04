@@ -1,8 +1,4 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
-(defpackage #:cl-cont-asd
-  (:use :cl :asdf))
-
-(in-package :cl-cont-asd)
 
 (defsystem cl-cont
   :name "cl-cont"
@@ -17,13 +13,15 @@
   :components ((:module
 		src
 		:components
-		((:file "cont")
+		((:file "defs")
+		 (:file "cont"
+			:depends-on ("defs"))
 		 (:file "special-transformers"
-			:depends-on ("cont"))
+			:depends-on ("defs" "cont"))
 		 (:file "helper-transformers"
-			:depends-on ("cont" "special-transformers"))
+			:depends-on ("defs" "cont" "special-transformers"))
 		 (:file "walker"
-			:depends-on ("cont" "special-transformers"))))))
+			:depends-on ("defs" "cont" "special-transformers"))))))
 
 (defmethod perform ((o asdf:test-op) (c (eql (find-system :cl-cont))))
   (funcall (intern "TEST-CONT" :cl-cont-test)))
