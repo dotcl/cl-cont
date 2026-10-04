@@ -1,14 +1,6 @@
-;;; Code shared accross the entire weblocks framework
-(defpackage #:cl-cont
-  (:nicknames #:cont)
-  (:use :cl)
-  (:documentation
-   "A library that implements continuations by transforming Common
-  Lisp code to continuation passing style."))
+;;; Code shared across the entire weblocks framework
 
-(in-package :cont)
-
-(export '(defcpstransformer cpstransformer copy-transformation-context))
+(in-package :cl-cont)
 
 (defparameter *special-form-transformers* (make-hash-table :size 25)
   "A hashtable that maps symbols to functions. Each function acts as a

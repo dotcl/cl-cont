@@ -781,6 +781,28 @@
        (funcall cc 5)))
   1 6)
 
+;;; Test that the expansion is CPS-converted.
+(deftest symbol-macrolet-3
+    (symbol-macrolet ((foo (let/cc k
+			     (setf cc k)
+			     (funcall cc 1))))
+      (let (cc)
+	(values
+	  (with-call/cc foo)
+	  (funcall cc 2))))
+  1 2)
+
+(deftest symbol-macrolet-4
+    (let (cc)
+      (values
+	(with-call/cc
+	  (symbol-macrolet ((foo (let/cc k
+				   (setf cc k)
+				   (funcall cc 1))))
+	    foo))
+	(funcall cc 2)))
+  1 2)
+
 ;;; LOCALLY
 (deftest locally-1
     (let (cc)
@@ -897,6 +919,16 @@
 			     args)
 	1 2 (values 3 (let/cc k
 			(funcall k 4))) 5 (values-list (list 'a 'b))))
+  (1 2 3 4 5 a b))
+
+;;; Test that the function expression is evaluated first.
+(deftest multiple-value-call-4
+    (let ((x 0))
+      (with-call/cc
+	(multiple-value-call (progn (setq x 1)
+				    (lambda (&rest args)
+				      args))
+	  x 2 (values 3 4) 5 (values-list (list 'a 'b)))))
   (1 2 3 4 5 a b))
 
 ;;; MULTIPLE-VALUE-PROG1
