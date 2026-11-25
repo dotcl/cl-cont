@@ -560,3 +560,18 @@ env)))
   (declare (ignore env))
   `(funcall ,k-expr ,cons))
 
+
+;;; dotcl: HANDLER-BIND expands its body into
+;;;   (unwind-protect (progn BODY...) (%pop-handler-cluster))
+;;; The protected form must stay visible to the CPS conversion, or a RETURN-FROM / GO inside it
+;;; names a BLOCK / TAGBODY the conversion has already removed. For exactly that shape, convert
+;;; BODY with a continuation that pops the cluster before it hands the value on.
+#+dotcl
+(defcpstransformer unwind-protect (cons k-expr env)
+  (if (and (equal (cddr cons) '((dotcl-internal::%pop-handler-cluster)))
+           (consp (cadr cons)) (eq (car (cadr cons)) 'progn))
+      (let ((v (gensym "V")))
+        (expr->cps (cadr cons)
+                   `(lambda (,v) (dotcl-internal::%pop-handler-cluster) (funcall ,k-expr ,v))
+                   env))
+      `(funcall ,k-expr ,cons)))
